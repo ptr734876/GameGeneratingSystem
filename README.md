@@ -76,7 +76,7 @@ Start it from the repository root:
 python -m http.server 4173 --directory web
 ```
 
-Then open `http://127.0.0.1:4173`. Use `WASD` or arrow keys to move, `Space` to dash, and hold the left mouse button to attack. The reset button starts a fresh permadeath run.
+Then open `http://127.0.0.1:4173`. Use `WASD` or arrow keys to move, `Space` to dash, and hold the left mouse button to attack. Press `P`, `Esc`, or the pause button to freeze the run and open the Telemetry Inspector. It shows the live build, the effective DPS calculation, recent action sequence, and the skill graph generated from your movement, dashes, shots, critical hits, and kills. The Generative Core panel remains visible during combat and reports each pattern's level and confidence. The reset button starts a fresh permadeath run.
 
 ## Unity integration
 
