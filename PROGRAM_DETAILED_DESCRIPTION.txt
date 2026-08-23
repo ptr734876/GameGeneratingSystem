@@ -1,0 +1,783 @@
+GAMEGENERATINGSYSTEM - ПОДРОБНОЕ ОПИСАНИЕ ПРОГРАММЫ
+================================================================
+
+Дата описания: 2026-08-24
+Корневой каталог: C:\codes\python\GameGeneratingSystem
+
+----------------------------------------------------------------
+1. НАЗНАЧЕНИЕ ПРОЕКТА
+----------------------------------------------------------------
+
+GameGeneratingSystem - прототип системы анализа игровой телеметрии и
+процедурного синтеза навыков игрока.
+
+Система получает поток игровых действий, например move, dash, parry,
+light_attack и heal. По этому потоку она вычисляет частоты, интервалы,
+последовательности действий, микропрогресс, уровни навыков и процедурные
+модификаторы персонажа.
+
+Главная дизайнерская идея проекта состоит в том, что игрок не выбирает
+заранее фиксированные слоты навыков. Вместо этого система обнаруживает
+повторяющиеся стили игры и создает узлы навыков динамически.
+
+Примеры:
+
+  dash -> light_attack
+      создает гибридный навык Phantom Thrust;
+
+  move -> dash
+      создает мобильный навык Vector Drift;
+
+  parry -> heavy_attack
+      создает гибридный контр-атакующий навык Vengeful Cleave;
+
+  light_attack -> light_attack -> light_attack
+      создает боевой навык Blade Flurry;
+
+  parry при низком здоровье
+      может создать Last Stand Protocol.
+
+Система состоит из нескольких уровней:
+
+  1. Python-модель и генераторы данных.
+  2. C++20 native core.
+  3. Стабильный C ABI для межъязыкового вызова.
+  4. C# bindings для .NET и Unity.
+  5. Pygame arena sandbox.
+  6. Headless benchmark и аналитические отчеты.
+  7. Тесты и подробные JSON/JSONL audit-файлы.
+
+----------------------------------------------------------------
+2. СТРУКТУРА КАТАЛОГОВ
+----------------------------------------------------------------
+
+CMakeLists.txt
+  Главный CMake-файл. Настраивает C++20, shared libraries, GoogleTest,
+  game_core и skillgen_c_api.
+
+README.md
+  Краткая документация проекта: сборка native core, C# bindings, benchmark,
+  Unity/Unreal интеграция и arena demo.
+
+PROGRAM_DETAILED_DESCRIPTION.txt
+  Этот файл. Подробное описание реализации, запуска, результатов и рисков.
+
+requirements.txt
+  Python-зависимости: numpy, scipy, matplotlib и pytest.
+
+pytest.ini
+  Ограничивает pytest каталогом tests. Это предотвращает случайный запуск
+  тестовых Python-файлов, которые входят во внутренний исходный код GoogleTest.
+
+src/
+  Исходный Python и C++ код проекта.
+
+src/math_model/power_budget.py
+  Базовые математические функции: EMA, Bayesian smoothing, z-score, Hill
+  saturation, n-gram counting, statistics и high-water mark.
+
+src/math_model/procedural_synthesis.py
+  Главный Python-движок процедурного синтеза. Создает SkillEntity, ведет
+  XP, уровни, DAG-граф и семантические stat allocations.
+
+src/simulation/telemetry_generator.py
+  Создает синтетическую телеметрию для трех первоначальных профилей:
+  Melee Berserker, Stealth Archer и Unorthodox Hybrid.
+
+src/simulation/baseline_populator.py
+  Генерирует population baseline на 10 000 профилей.
+
+src/core/
+  C++20 core implementation.
+
+src/core/RingBuffer.hpp
+  Fixed-capacity FIFO ring buffer без динамических аллокаций в hot path.
+
+src/core/TelemetryTracker.hpp/.cpp
+  Thread-safe обработчик native action events, EMA, интервалов и combo data.
+
+src/core/PowerBudget.hpp/.cpp
+  Hill saturation, exponential soft-cap, gate validation и BonusRatchet.
+
+include/skillgen/SkillGen_C_API.h
+  Публичный C ABI. Содержит opaque SkillGen_Context, POD structs и exported
+  функции, пригодные для C#, Rust, C++ и других FFI-клиентов.
+
+src/c_api/SkillGen_C_API.cpp
+  Реализация C API. Перехватывает C++ exceptions и возвращает status codes.
+
+bindings/csharp/SkillGen.Bindings/
+  .NET 8 class library. Содержит NativeMethods, SafeHandle, SkillGenClient,
+  SkillGenConfig и Skill model.
+
+bindings/csharp/SkillGen.Tests/
+  xUnit integration tests, которые создают native context, отправляют события,
+  получают modifiers и уничтожают context.
+
+demo/arena_sandbox.py
+  Интерактивная Pygame arena. Есть ручное управление, bot modes, native
+  telemetry, procedural nodes, HUD, soft-cap notifications и saving report.
+
+harness/simulation_runner.py
+  Headless native benchmark трех bot profiles. Формирует report.json,
+  summary.md и simulation_detailed_audit.log.
+
+tests/
+  Python и C++ тесты.
+
+artifacts/
+  Сгенерированные baseline, reports, audit logs и plots.
+
+build-capi/
+  Рабочая CMake-сборка с MinGW. Обычно содержит libgame_core.dll,
+  libskillgen_c_api.dll, core_tests.exe и c_api_tests.exe.
+
+----------------------------------------------------------------
+3. МАТЕМАТИЧЕСКАЯ МОДЕЛЬ
+----------------------------------------------------------------
+
+3.1. EMA
+
+Функция ema(values, alpha, initial) вычисляет exponential moving average.
+
+Для очередного значения x_t формула имеет вид:
+
+  EMA_t = alpha * x_t + (1 - alpha) * EMA_(t-1)
+
+alpha находится в диапазоне (0, 1]. Большое alpha быстрее реагирует на новое
+значение, малое alpha сильнее сглаживает шум.
+
+Первый результат равен первому входному значению, если initial не задан.
+Пустой вход дает пустой numpy array.
+
+3.2. Empirical Bayes smoothing
+
+Функция empirical_bayes_smoothing(count, trials, prior_mean,
+prior_strength) рассчитывает сглаженную оценку доли:
+
+  posterior = (count + prior_strength * prior_mean)
+               / (trials + prior_strength)
+
+При отсутствии наблюдений используется prior_mean. Это предотвращает
+нулевой или чрезмерный cold-start bonus.
+
+3.3. Z-score
+
+Z-score рассчитывается по формуле:
+
+  z = (observed - baseline_mean) / baseline_std
+
+При нулевом или некорректном standard deviation функция возвращает 0 вместо
+NaN или исключения. При необходимости результат ограничивается clip.
+
+3.4. Hill saturation и soft-cap
+
+Сначала рассчитывается Hill curve:
+
+  base = maximum * x^hill / (threshold^hill + x^hill)
+
+После threshold применяется дополнительная exponential soft-cap:
+
+  soft = maximum * (1 - exp(-decay * (x - threshold)))
+
+Итог ограничивается maximum. Это предотвращает линейный рост бонуса от
+многократного повторения одной кнопки.
+
+3.5. Non-degrading high-water mark
+
+Функция ratchet_bonus(previously_granted_bonus, new_calculated_bonus)
+возвращает:
+
+  max(0, previously_granted_bonus, new_calculated_bonus)
+
+Если baseline или recalibration впоследствии уменьшает расчетное значение,
+уже выданный bonus не отзывается. Измениться могут только будущие thresholds,
+XP requirements, eligibility и steepness soft-cap.
+
+Тот же принцип реализован в C++ BonusRatchet и дополнительно учитывается в
+C# SkillGenClient.
+
+----------------------------------------------------------------
+4. ПРОЦЕДУРНЫЙ SYNTHESIS ENGINE
+----------------------------------------------------------------
+
+Класс ProceduralSkillEngine хранит:
+
+  baseline
+    Population telemetry baseline.
+
+  skills
+    Словарь skill_id -> SkillEntity.
+
+  edges
+    Множество пар parent -> child для DAG.
+
+  recent
+    Последние максимум три distinct action states.
+
+  pattern_counts
+    Сколько раз встретилась каждая последовательность.
+
+  total_xp
+    Общий micro-XP.
+
+  audit
+    Список структурированных audit events.
+
+SkillEntity хранит:
+
+  skill_id
+  name
+  trigger
+  pattern
+  level
+  xp
+  next_threshold
+  granted_bonus
+  parents
+  soft_cap_active
+  stat_types
+  situational
+  combo_window_seconds
+  stats
+
+Root nodes с длиной pattern 1 являются Passive skills. Combo nodes длины 2 или
+3 являются situational skills и имеют combo_window_seconds = 1.2.
+
+XP начисляется за каждое валидное действие:
+
+  root action: 2.4 XP;
+  transition/combo: 4.8 + длина pattern XP.
+
+Threshold следующего уровня:
+
+  next_threshold = 100 * 1.12^level
+
+Уровень увеличивается, когда накопленный XP достигает threshold. Остаток XP
+переносится на следующий уровень.
+
+4.1. Deduplication
+
+Последовательные одинаковые состояния не образуют multi-node n-gram.
+Например:
+
+  move, move, move, move
+
+не создает move -> move. Такой поток учитывается как повтор root action.
+Когда появляется другое состояние, снова могут формироваться transitions:
+
+  move -> dash
+  dash -> light_attack
+  move -> dash -> light_attack
+
+Это предотвращает получение искусственных combo skills за удержание одной
+кнопки.
+
+4.2. Grammar names
+
+Для известных patterns используются имена из NAME_RULES:
+
+  dash + light_attack       Phantom Thrust
+  parry + heavy_attack      Vengeful Cleave
+  move + dash                Vector Drift
+  light + light + light      Blade Flurry
+  light + light              Relentless Tempo
+  heal                       Second Wind
+  move                       Kinetic Footwork
+  dash                       Slipstream Step
+  parry                       Readied Guard
+  heavy_parry                Iron Reflex
+
+Для неизвестного pattern создается осмысленное имя вида
+"Move Dash Mastery", а не случайный или пустой placeholder.
+
+4.3. Semantic categories
+
+Категория определяется набором участвующих действий:
+
+  mobility
+    move_speed_percent
+    dash_cooldown_reduction_percent
+    dash_distance_percent
+    stamina_cost_reduction_percent
+
+  combat
+    attack_damage_percent
+    critical_chance_percent
+    attack_speed_percent
+    armor_penetration_percent
+
+  defensive
+    damage_mitigation_percent
+    counter_damage_multiplier_percent
+    parry_window_expansion_ms
+    reflect_percent
+
+  sustain
+    hp_recovery_percent
+    life_steal_on_hit_percent
+    healing_cooldown_reduction_percent
+
+  hybrid
+    dash_strike_damage_percent
+    invulnerability_frame_bonus_ms
+
+Mobility node не получает attack damage. Combat node не получает move speed.
+Hybrid node получает только hybrid stats. Каждая node хранит stat_types и stats,
+поэтому эта семантика проверяется тестами.
+
+4.4. DAG
+
+При создании нового node система ищет уже существующие более короткие nodes,
+чьи patterns являются подмножествами новой pattern. Такие nodes становятся
+parents. Для каждого parent добавляется edge parent -> child.
+
+DAG snapshot содержит nodes, edges, total_xp и pattern_counts.
+
+----------------------------------------------------------------
+5. POPULATION BASELINE
+----------------------------------------------------------------
+
+baseline_populator.py моделирует 10 000 отдельных профилей.
+
+Поддерживаемые archetypes:
+
+  casual
+  speedrunner
+  turtle
+  spam_exploiter
+  hybrid
+
+Для каждого профиля используется:
+
+  - archetype prior;
+  - Dirichlet variation action probabilities;
+  - log-normal sample size;
+  - multinomial action observations;
+  - log-normal idle intervals;
+  - geometric streak lengths;
+  - фиксированный random seed для воспроизводимости.
+
+Действия baseline:
+
+  dash
+  light_attack
+  heavy_parry
+  heal
+  move
+
+В global_baseline.json сохраняются:
+
+  - profile count;
+  - random seed;
+  - archetype prior shares;
+  - action means;
+  - variance;
+  - standard deviation;
+  - percentile bands 5/25/50/75/95;
+  - Bayesian prior_weight;
+  - idle interval statistics;
+  - streak statistics.
+
+Текущий baseline был создан для 10 000 профилей и имеет размер около 3.3 KB.
+
+----------------------------------------------------------------
+6. C++20 CORE
+----------------------------------------------------------------
+
+RingBuffer<T, Capacity> использует std::array фиксированного размера.
+
+push записывает новое значение. Если buffer заполнен, самый старый элемент
+перезаписывается. pop возвращает std::optional<T>. Владение памятью не
+передается через raw pointer. В hot path нет heap allocation.
+
+TelemetryTracker использует:
+
+  - std::array metrics;
+  - std::array timestamps;
+  - std::array combos;
+  - std::array recent actions;
+  - std::mutex для thread safety.
+
+process(ActionEvent) обновляет счетчики, EMA frequency, EMA interval и combo
+matching. metrics() копирует ActionMetrics под mutex.
+
+PowerBudget содержит:
+
+  hill_soft_cap;
+  validate_gate;
+  BonusRatchet.
+
+BonusRatchet защищен mutex и не уменьшает granted_bonus.
+
+----------------------------------------------------------------
+7. C API
+----------------------------------------------------------------
+
+Публичный файл include/skillgen/SkillGen_C_API.h содержит opaque handle:
+
+  typedef struct SkillGen_Context SkillGen_Context;
+
+Основные POD structs:
+
+  SkillGen_ActionEvent
+    uint32 action_id;
+    uint32 context_tags;
+    double timestamp_seconds;
+
+  SkillGen_SkillModifier
+    char action_name[64];
+    double value;
+    double confidence;
+    uint64 sample_count;
+
+  SkillGen_GateRule
+    int32 required_level;
+    const char* required_region;
+    uint64 minimum_samples;
+
+  SkillGen_EngineConfig
+    double ema_alpha;
+    SkillGen_GateRule gate;
+    uint32 max_skills;
+
+Экспортируемые функции:
+
+  skillgen_create_context
+  skillgen_destroy_context
+  skillgen_push_action
+  skillgen_evaluate_skills
+  skillgen_set_global_baseline
+
+Каждая функция реализации заключена в try/catch (...). Исключение не может
+пересечь C ABI. При ошибке возвращается SKILLGEN_INTERNAL_ERROR или другой
+status code.
+
+----------------------------------------------------------------
+8. C# BINDINGS
+----------------------------------------------------------------
+
+NativeMethods.cs описывает native structs через StructLayout.Sequential.
+CallingConvention установлен в Cdecl.
+
+Native context обернут в SkillGenSafeHandle. Его ReleaseHandle вызывает
+skillgen_destroy_context. SkillGenClient реализует IDisposable.
+
+PushAction(string actionId, float value, string[] tags):
+
+  1. Проверяет disposed и непустой actionId.
+  2. Вычисляет стабильный FNV-1a hash.
+  3. Ограничивает native action ID диапазоном 0..255.
+  4. Преобразует tags в bitmask.
+  5. Создает native ActionEvent.
+  6. Вызывает skillgen_push_action.
+
+GetActiveSkills():
+
+  1. Создает массив native output structs.
+  2. Вызывает skillgen_evaluate_skills.
+  3. Читает action_name, value, confidence и sample_count.
+  4. Применяет C# high-water mark.
+  5. Возвращает read-only список Skill.
+
+SkillGenConfig является serialization-ready моделью и содержит EmaAlpha,
+MaxSkills, Gate и Curve settings.
+
+----------------------------------------------------------------
+9. HEADLESS HARNESS
+----------------------------------------------------------------
+
+harness/simulation_runner.py загружает native DLL через ctypes.
+На Windows сначала добавляются каталоги:
+
+  build-capi
+  C:\mingw64\bin
+
+Это необходимо для разрешения libgame_core.dll и MinGW runtime DLL.
+
+Используются три независимых contexts:
+
+  Speedster
+    40% Move, 40% Dash, 20% Light Attack.
+    Branch: mobility.
+
+  Tank
+    30% Block, 30% Parry, 40% Heavy Attack.
+    Branch: mitigation.
+
+  Spammer
+    95% Single Action, 5% Recovery.
+    Branch: anti-exploit.
+
+ThreadPoolExecutor запускает три simulation tasks параллельно.
+Каждая simulation выполняет заданное количество ticks, отправляет native
+ActionEvent, оценивает skills и закрывает context в finally.
+
+report.json содержит action counts, modifiers, branch share, dominant action,
+confidence и anti_exploit values.
+
+summary.md содержит компактную таблицу для balance review.
+
+simulation_detailed_audit.log является JSONL-файлом. В текущем trial на 1 000
+тиков было 3 000 записей, по одной на каждый bot/tick.
+
+Каждая audit entry содержит:
+
+  - event;
+  - tick;
+  - timestamp;
+  - actor_id;
+  - action_id;
+  - raw action;
+  - ngram;
+  - z-score formula, inputs and result;
+  - Bayesian prior weight;
+  - Bayesian sample weight;
+  - posterior formula and result;
+  - Hill threshold, exponent and maximum;
+  - Hill base point;
+  - exponential soft-cap point;
+  - calculated bonus;
+  - previous granted bonus;
+  - granted non-degrading bonus;
+  - soft-cap flag and penalty rate;
+  - character stats before and after.
+
+----------------------------------------------------------------
+10. ARENA SANDBOX
+----------------------------------------------------------------
+
+demo/arena_sandbox.py использует Pygame и целится в 60 FPS.
+
+Manual controls:
+
+  WASD       движение;
+  Space      dash;
+  Left mouse Light Strike;
+  Right mouse Heavy Strike;
+  Shift      Parry/Block;
+  Q          Healing Potion;
+  0          Manual mode;
+  1          Speedster bot;
+  2          Tank bot;
+  3          Berserker bot;
+  TAB        fullscreen procedural graph inspector;
+  R          reset telemetry;
+  S          save reports.
+
+Arena содержит player, enemies, wave value, resource meters и HUD.
+Используются типы врагов Melee, Ranged и Heavy. NativeTracker отправляет
+события в C API, а ProceduralSkillEngine создает динамические nodes.
+
+HUD показывает:
+
+  - procedural skill DAG;
+  - names and levels;
+  - granted bonus;
+  - soft-cap marker;
+  - Hill saturation curve;
+  - HP, energy/stamina and combo values;
+  - rolling telemetry diagnostics;
+  - toast notifications.
+
+S сохраняет:
+
+  artifacts/demo_session_report.json
+  artifacts/demo_roguelite_report.json
+
+Headless проверка:
+
+  python demo/arena_sandbox.py --headless --frames 120
+
+----------------------------------------------------------------
+11. ТЕСТЫ И РЕЗУЛЬТАТЫ
+----------------------------------------------------------------
+
+Python tests запускаются командой:
+
+  python -m pytest -q
+
+Тесты проверяют:
+
+  - zero division safety;
+  - z-score clipping;
+  - empirical Bayes cold start;
+  - Hill cap asymptotics;
+  - n-gram counting;
+  - EMA convergence;
+  - bonus ratchet;
+  - one-hour progression;
+  - three distinct DAG graphs;
+  - maximum stat budget;
+  - 10 000 action stream;
+  - отсутствие trivial move -> move transitions;
+  - semantic mobility/combat stat mappings;
+  - creation of progression audit.
+
+Последний полный результат:
+
+  13 Python tests passed.
+
+C++ tests запускаются через CTest:
+
+  ctest --test-dir build-capi --output-on-failure
+
+Последний проверенный результат native suite:
+
+  9 tests passed.
+
+C# tests запускаются командой:
+
+  dotnet test bindings/csharp/SkillGen.Tests/SkillGen.Tests.csproj
+
+Последний проверенный результат:
+
+  2 xUnit tests passed.
+
+Headless Pygame smoke test запускался на 120 frames без traceback.
+
+----------------------------------------------------------------
+12. АРТЕФАКТЫ
+----------------------------------------------------------------
+
+artifacts/global_baseline.json
+  Population baseline. Сейчас содержит статистику 10 000 профилей.
+
+artifacts/report.json
+  Headless benchmark report.
+
+artifacts/summary.md
+  Человекочитаемая таблица benchmark результатов.
+
+artifacts/simulation_detailed_audit.log
+  JSONL audit для native 3-bot trial. На 1 000 ticks: 3 000 entries.
+
+artifacts/procedural_progression_audit.json
+  Большой JSON audit для 7 200 действий: synthesized nodes, DAG edges,
+  thresholds, XP, modifiers, stat sheets и подробные progression events.
+
+artifacts/demo_session_report.json
+  Последняя сессия Pygame demo.
+
+artifacts/demo_roguelite_report.json
+  Roguelite-совместимый report с wave, skill graph и stat sheet.
+
+artifacts/plots/ema_convergence.png
+  График сходимости EMA.
+
+----------------------------------------------------------------
+13. КОМАНДЫ ЗАПУСКА
+----------------------------------------------------------------
+
+Сборка C++:
+
+  cmake -S . -B build-capi -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+  cmake --build build-capi --parallel 4
+  ctest --test-dir build-capi --output-on-failure
+
+Python tests:
+
+  python -m pytest -q
+
+Regenerate baseline:
+
+  python src/simulation/baseline_populator.py
+
+Run 1 000-tick native audit:
+
+  python harness/simulation_runner.py --ticks 1000
+
+Run arena:
+
+  python demo/arena_sandbox.py
+
+Run headless arena:
+
+  python demo/arena_sandbox.py --headless --frames 120
+
+C# tests:
+
+  dotnet test bindings/csharp/SkillGen.Tests/SkillGen.Tests.csproj
+
+----------------------------------------------------------------
+14. ТЕКУЩИЕ УСПЕХИ
+----------------------------------------------------------------
+
+  - C++20 native core собирается через CMake.
+  - Shared DLL успешно создаются.
+  - GoogleTest интегрирован через FetchContent.
+  - C ABI lifecycle проверен.
+  - C# P/Invoke bindings загружают native DLL.
+  - xUnit integration tests проходят.
+  - Population baseline создается воспроизводимо.
+  - Procedural nodes формируют разные DAG для разных стилей игры.
+  - Bonus high-water mark не позволяет отзывать выданный bonus.
+  - Repetitive spam ограничивается saturation cap.
+  - Pygame demo запускается в headless mode.
+  - JSON и JSONL audit-файлы создаются автоматически.
+
+----------------------------------------------------------------
+15. ТЕКУЩИЕ ОГРАНИЧЕНИЯ И РИСКИ
+----------------------------------------------------------------
+
+1. Native C++ DLL сейчас является прототипом. Для production необходимы ABI
+   versioning, export version checks и CI на Windows/Linux/macOS.
+
+2. Action ID в C# client получается из FNV hash modulo 256. Теоретически два
+   разных action name могут получить одинаковый ID. Для production необходим
+   registry collision detection или более широкий native ID space.
+
+3. C API evaluate_skills возвращает numeric action_name в фиксированном char[64]
+   buffer. Это прототипное решение; production API должен иметь отдельный
+   stable action registry.
+
+4. Текущая native модель и Python procedural model являются связанными, но не
+   полностью идентичными реализациями. Для production нужен единый источник
+   формул и golden-vector tests между Python и C++.
+
+5. Pygame arena имеет демонстрационный AI. Полноценные projectile simulation,
+   advanced enemy state machines, collision layers и complete wave victory
+   conditions требуют дальнейшей разработки.
+
+6. Сериализация progression audit может создавать большие JSON-файлы. Для
+   длительных sessions лучше использовать JSONL, SQLite или compressed chunks.
+
+7. Benchmark threshold < 2 ms зависит от CPU, build mode и измерительного шума.
+   Нужны отдельные warm-up iterations, percentile timings и CI hardware policy.
+
+8. Mutex защищает native tracker, но один context не предназначен для
+   lock-free high-contention workloads. Для production можно использовать
+   per-thread ingestion queues и batch merge.
+
+9. Baseline является synthetic simulation, а не реальной обезличенной
+   telemetry. Балансировщик должен валидировать его на production-like data.
+
+10. High-water mark предотвращает уменьшение уже выданного bonus, но policy
+    для reset, season rollover и intentional respec пока не формализована.
+
+11. Тесты проверяют отсутствие memory leaks косвенно через bounded containers и
+    завершение процессов. Для production нужны ASan, UBSan, Valgrind или
+    platform-specific leak detectors.
+
+12. Pygame native DLL loading зависит от Windows DLL search path и MinGW runtime.
+    На другой машине нужно собрать DLL и убедиться, что зависимые runtime DLL
+    доступны.
+
+----------------------------------------------------------------
+16. ИТОГ
+----------------------------------------------------------------
+
+Текущая программа является работающим многоуровневым прототипом:
+
+  telemetry -> baseline -> statistics -> synthesis -> DAG -> modifiers -> HUD
+  -> native/C API -> C# integration -> reports and audit logs
+
+Ключевые гарантии текущей версии:
+
+  - повторение одной кнопки не создает trivial transition n-grams;
+  - semantic stat allocation не смешивает несвязанные классы характеристик;
+  - уже выданные bonuses не уменьшаются;
+  - modifiers ограничиваются saturation/stat caps;
+  - разные archetypes получают различные procedural graph structures;
+  - вычисления и решения можно восстановить по audit entries;
+  - Python, C++, C API и C# слои имеют автоматические проверки.

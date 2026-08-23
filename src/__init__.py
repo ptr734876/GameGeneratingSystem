@@ -1,0 +1,1 @@
+"""GameGeneratingSystem source package."""

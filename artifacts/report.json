@@ -1,0 +1,148 @@
+{
+  "ticks_per_bot": 1000,
+  "engine": "libskillgen_c_api.dll",
+  "baseline": "C:\\codes\\python\\GameGeneratingSystem\\artifacts\\global_baseline.json",
+  "bots": [
+    {
+      "bot": "Speedster",
+      "ticks": 1000,
+      "action_counts": {
+        "1": 404,
+        "2": 366,
+        "3": 230
+      },
+      "modifiers": [
+        {
+          "action_id": 1,
+          "action": "Move",
+          "value": 0.8908685968819599,
+          "confidence": 1.0,
+          "sample_count": 404
+        },
+        {
+          "action_id": 2,
+          "action": "Dash",
+          "value": 0.8908685968819599,
+          "confidence": 1.0,
+          "sample_count": 366
+        },
+        {
+          "action_id": 3,
+          "action": "Light Attack",
+          "value": 0.8908685968819599,
+          "confidence": 1.0,
+          "sample_count": 230
+        }
+      ],
+      "branch": "mobility",
+      "branch_share": 0.77,
+      "dominant_action": "Move",
+      "dominant_share": 0.404,
+      "dominant_modifier": {
+        "action_id": 1,
+        "action": "Move",
+        "value": 0.8908685968819599,
+        "confidence": 1.0,
+        "sample_count": 404
+      },
+      "anti_exploit": {
+        "bounded": true,
+        "linear_unbounded_value": 4.04,
+        "native_value": 0.8908685968819599
+      }
+    },
+    {
+      "bot": "Tank",
+      "ticks": 1000,
+      "action_counts": {
+        "10": 299,
+        "11": 297,
+        "12": 404
+      },
+      "modifiers": [
+        {
+          "action_id": 10,
+          "action": "Block",
+          "value": 0.8908685968819599,
+          "confidence": 1.0,
+          "sample_count": 299
+        },
+        {
+          "action_id": 11,
+          "action": "Parry",
+          "value": 0.8908685968819599,
+          "confidence": 1.0,
+          "sample_count": 297
+        },
+        {
+          "action_id": 12,
+          "action": "Heavy Attack",
+          "value": 0.8908685968819599,
+          "confidence": 1.0,
+          "sample_count": 404
+        }
+      ],
+      "branch": "mitigation",
+      "branch_share": 0.596,
+      "dominant_action": "Heavy Attack",
+      "dominant_share": 0.404,
+      "dominant_modifier": {
+        "action_id": 12,
+        "action": "Heavy Attack",
+        "value": 0.8908685968819599,
+        "confidence": 1.0,
+        "sample_count": 404
+      },
+      "anti_exploit": {
+        "bounded": true,
+        "linear_unbounded_value": 4.04,
+        "native_value": 0.8908685968819599
+      }
+    },
+    {
+      "bot": "Spammer",
+      "ticks": 1000,
+      "action_counts": {
+        "20": 942,
+        "21": 58
+      },
+      "modifiers": [
+        {
+          "action_id": 20,
+          "action": "Single Action",
+          "value": 0.8908685968819599,
+          "confidence": 1.0,
+          "sample_count": 942
+        },
+        {
+          "action_id": 21,
+          "action": "Recovery",
+          "value": 0.8908685968819599,
+          "confidence": 1.0,
+          "sample_count": 58
+        }
+      ],
+      "branch": "anti-exploit",
+      "branch_share": 0.942,
+      "dominant_action": "Single Action",
+      "dominant_share": 0.942,
+      "dominant_modifier": {
+        "action_id": 20,
+        "action": "Single Action",
+        "value": 0.8908685968819599,
+        "confidence": 1.0,
+        "sample_count": 942
+      },
+      "anti_exploit": {
+        "bounded": true,
+        "linear_unbounded_value": 9.42,
+        "native_value": 0.8908685968819599
+      }
+    }
+  ],
+  "claims": {
+    "Speedster": "mobility perks dominate Move/Dash telemetry",
+    "Tank": "mitigation perks dominate Block/Parry telemetry",
+    "Spammer": "native saturation remains bounded despite repetitive input"
+  }
+}

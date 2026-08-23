@@ -1,0 +1,22 @@
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+build/
+build-*/
+**/bin/
+**/obj/
+CMakeFiles/
+*.o
+*.obj
+*.dll
+*.dll.a
+*.so
+*.dylib
+
+# Local IDE and OS files
+.vscode/
+.idea/
+.DS_Store
