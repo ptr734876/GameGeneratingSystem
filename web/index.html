@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SkillGen: Ashfall Protocol</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">S</span><div><strong>SKILLGEN</strong><small>ASHFALL PROTOCOL</small></div></div>
+      <div class="run-meta"><span id="phaseLabel">WAVE 01</span><span class="live-dot"></span><span id="statusLabel">LIVE RUN</span></div>
+      <button class="icon-button" id="newRunButton" title="Начать новый забег">↻</button>
+    </header>
+    <section class="game-layout">
+      <div class="arena-wrap">
+        <canvas id="game" aria-label="Игровая арена"></canvas>
+        <div class="arena-vignette"></div>
+        <div class="boss-bar" id="bossBar"><div class="boss-name">WARDEN // ENRAGED</div><div class="meter"><i id="bossHealth"></i></div></div>
+        <div class="controls"><kbd>WASD</kbd> MOVE <kbd>SPACE</kbd> DASH <kbd>LMB</kbd> FIRE</div>
+      </div>
+      <aside class="hud">
+        <section class="hero-card"><div class="section-kicker">OPERATOR / 07</div><div class="hero-row"><div class="avatar">◈</div><div><h1>Vesper</h1><p id="buildName">ASH RUNNER</p></div><div class="level">LV <b id="level">01</b></div></div><div class="bar-label"><span>VITALITY</span><b id="healthText">100 / 100</b></div><div class="health-track"><i id="healthBar"></i></div><div class="stat-row"><span>ARMOR <b id="armor">12</b></span><span>CRIT <b id="crit">12%</b></span><span>DPS <b id="dps">0</b></span></div></section>
+        <section class="metrics"><div class="section-head"><span>RUN TELEMETRY</span><b id="timer">00:00</b></div><div class="metric-grid"><div><small>WAVE</small><strong id="wave">01 / 05</strong></div><div><small>ELIMINATIONS</small><strong id="kills">000</strong></div><div><small>DAMAGE DEALT</small><strong id="damage">0000</strong></div><div><small>BEST HIT</small><strong id="bestHit">000</strong></div></div><div class="dash-row"><span>DASH CORE</span><div class="dash-track"><i id="dashBar"></i></div><b id="dashText">READY</b></div></section>
+        <section class="relics"><div class="section-head"><span>RELIC LOADOUT</span><b id="relicCount">00 / 06</b></div><div id="relicList" class="relic-list"></div></section>
+        <section class="log"><div class="section-head"><span>COMBAT FEED</span><span class="signal">● SIGNAL</span></div><div id="combatLog"></div></section>
+      </aside>
+    </section>
+  </main>
+  <div class="modal hidden" id="modal"><div class="modal-panel"><div class="section-kicker" id="modalKicker">WAVE CLEARED</div><h2 id="modalTitle">Choose your relic</h2><p id="modalCopy">One choice. Make it compound.</p><div class="choices" id="choices"></div><button class="primary-button hidden" id="restartButton">START NEW RUN <span>↗</span></button></div></div>
+  <script type="module" src="game.js"></script>
+</body>
+</html>

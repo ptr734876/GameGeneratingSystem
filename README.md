@@ -66,6 +66,18 @@ python demo/arena_sandbox.py
 
 Manual controls are WASD to move, Space to dash, left mouse for Light Strike, held right mouse for Heavy Strike/Parry, and Q for healing. Press `0` for manual control, `1` for Speedster, `2` for Tank, `3` for Spammer, `R` to reset telemetry, and `S` to save `artifacts/demo_session_report.json`. The side panel shows branch levels, modifiers, soft-cap state, rolling diagnostics, and the live Hill curve. Smoke-test without a window using `python demo/arena_sandbox.py --headless --frames 120`.
 
+## Browser roguelite
+
+The repository also includes a standalone HTML5 Canvas action-roguelite in `web/`. It has procedural arenas, swarmers/rangers/tanks, a Warden bullet-hell boss every fifth wave, dash i-frames, relic choices, status effects, combat text, screen feedback, and live run telemetry. The math helpers in `web/game.js` are pure functions and use the documented DPS and armor formulas.
+
+Start it from the repository root:
+
+```powershell
+python -m http.server 4173 --directory web
+```
+
+Then open `http://127.0.0.1:4173`. Use `WASD` or arrow keys to move, `Space` to dash, and hold the left mouse button to attack. The reset button starts a fresh permadeath run.
+
 ## Unity integration
 
 1. Build the native targets in Release mode.
