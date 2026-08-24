@@ -80,7 +80,9 @@ Then open `http://127.0.0.1:4173`. Use `WASD` or arrow keys to move and `Space` 
 
 The Generative Core is explainable rather than a cosmetic score. Every generated pattern stores its source event/sequence, observation count, threshold, unlock rule, growth rule, current buff, and buff formula. `EVIDENCE` means `observations / threshold`; it measures how strongly the current telemetry supports the pattern, while `LV` controls the size of the effect. For example, `Ballistic Loop` is unlocked after 5 `fire` events and grants `+3% attack speed` per level; `Ashen Rhythm` uses repeated `fire -> fire` sequences and grants `+4% damage` per level. These two generated modifiers are applied to combat, and the pause formula includes their current values.
 
-Pattern telemetry is cumulative for the current run. The visible recent-event list is capped at 80 entries for readability, but it cannot reduce a skill level. Growth uses a soft cap: `level = floor((observations / threshold)^0.74) + 1`, so later levels need increasingly more evidence while progression remains unbounded.
+Pattern telemetry is cumulative for the current run. The visible recent-event list is capped at 80 entries for readability, but it cannot reduce a skill level. Unlock growth uses a soft cap: `level = floor((observations / threshold)^0.74) + 1`, so later levels need increasingly more evidence while progression remains unbounded. Buff strength is also diminishing: `buff = base × level^0.72`, so high levels still improve the build but each additional level gives a smaller increment.
+
+The generator now observes more than movement and shots: target locks, critical hits, kills, damage taken, healing, cleared waves, and action sequences. This can produce defensive and tactical skills such as `Targeting Matrix`, `Survivor Instinct`, `Recovery Loop`, `Floor Architect`, and `Pressure Valve`, whose modifiers are applied to targeting range, mitigation, healing, max HP, and dash distance.
 
 ## Unity integration
 
