@@ -84,6 +84,14 @@ Pattern telemetry is cumulative for the current run. The visible recent-event li
 
 The generator now observes more than movement and shots: target locks, critical hits, kills, damage taken, healing, cleared waves, and action sequences. This can produce defensive and tactical skills such as `Targeting Matrix`, `Survivor Instinct`, `Recovery Loop`, `Floor Architect`, and `Pressure Valve`, whose modifiers are applied to targeting range, mitigation, healing, max HP, and dash distance.
 
+### Generator contract for gameplay code
+
+To use the generator in another game, send normalized gameplay events into the telemetry adapter at the moment they happen. The current browser prototype uses events such as `move`, `dash`, `target_lock`, `fire`, `crit`, `kill`, `damage_taken`, `heal`, `wave_clear`, `crimson_mend_roll`, `amber_volley`, `violet_pressure`, and `warden_barrage`. Each event increments a cumulative counter; consecutive events also increment a sequence counter such as `dash -> fire` or `damage_taken -> dash`.
+
+The adapter should provide at least: event name, timestamp, actor id, target id when relevant, result (`success`, `miss`, or `proc`), numeric value such as damage/heal, and context tags such as enemy type, color, weapon, biome, or difficulty. Do not emit a skill directly from a single random proc. Record the attempt and the result separately, then let the rule require a threshold and confidence/evidence ratio.
+
+The current generator is rule-driven, not an unrestricted AI skill author. New skill families are added by registering a pattern definition: input events/sequences, minimum observations, unlock formula, soft-cap level formula, buff formula, and an application function. To make generation truly data-driven for a production game, move those definitions into a JSON/config registry and add a validator that checks buff bounds, incompatible modifiers, target stat, and deterministic replay. The current system can freely vary values and combine registered triggers, but it will not safely invent arbitrary new mechanics until that registry and application layer exist.
+
 ## Unity integration
 
 1. Build the native targets in Release mode.
