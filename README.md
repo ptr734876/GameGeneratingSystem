@@ -76,7 +76,9 @@ Start it from the repository root:
 python -m http.server 4173 --directory web
 ```
 
-Then open `http://127.0.0.1:4173`. Use `WASD` or arrow keys to move and `Space` to dash. Combat is now automatic: the operator locks onto the nearest living enemy within range only when the line of sight is clear of arena obstacles, then aims and fires without mouse input. Press `P`, `Esc`, or the pause button to freeze the run and open the Telemetry Inspector. It shows the live build, the effective DPS calculation, recent action sequence, and the skill graph generated from your movement, dashes, shots, critical hits, and kills. The Generative Core panel remains visible during combat and reports each pattern's level and confidence. The reset button starts a fresh permadeath run.
+Then open `http://127.0.0.1:4173`. Use `WASD` or arrow keys to move and `Space` to dash. Combat is now automatic: the operator locks onto the nearest living enemy within range only when the line of sight is clear of arena obstacles, then aims and fires without mouse input. Press `P`, `Esc`, or the pause button to freeze the run and open the Telemetry Inspector. It shows the live build, the effective DPS calculation, recent action sequence, and the skill graph generated from your movement, dashes, shots, critical hits, and kills.
+
+The Generative Core is explainable rather than a cosmetic score. Every generated pattern stores its source event/sequence, observation count, threshold, unlock rule, growth rule, current buff, and buff formula. `EVIDENCE` means `observations / threshold`; it measures how strongly the current telemetry supports the pattern, while `LV` controls the size of the effect. For example, `Ballistic Loop` is unlocked after 5 `fire` events and grants `+3% attack speed` per level; `Ashen Rhythm` uses repeated `fire -> fire` sequences and grants `+4% damage` per level. These two generated modifiers are applied to combat, and the pause formula includes their current values.
 
 ## Unity integration
 
