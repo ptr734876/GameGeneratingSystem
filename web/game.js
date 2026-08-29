@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_18';
-import { SoundEngine } from './audio.js?v=20260829_18';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_19';
+import { SoundEngine } from './audio.js?v=20260829_19';
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
@@ -9,6 +9,17 @@ const clamp = (value, min, max) => Number.isFinite(value) ? Math.max(min, Math.m
 const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 export const effectiveDps = (baseDamage, damageMult, attackSpeed, critChance, critMult) => (baseDamage * damageMult) * attackSpeed * (1 + critChance * (critMult - 1));
 export const mitigatedDamage = (rawDamage, armor) => rawDamage * (100 / (100 + Math.max(0, armor)));
+
+function getOrCreateGuestUsername() {
+  let stored = localStorage.getItem('skillgen_username');
+  if (!stored || stored === 'ptr734876' || stored === 'null' || stored === 'undefined') {
+    const prefixes = ['Operator', 'Specter', 'Vanguard', 'Nova', 'CyberPilot', 'Apex', 'Phantom', 'Ronin', 'Vector', 'Echo'];
+    const num = Math.floor(100 + Math.random() * 900);
+    stored = `${prefixes[Math.floor(Math.random() * prefixes.length)]}-${num}`;
+    localStorage.setItem('skillgen_username', stored);
+  }
+  return stored;
+}
 
 const generator = new GenerativeSkillEngine();
 const audio = new SoundEngine();
@@ -55,7 +66,7 @@ const state = {
   lastAction: null,
   generatedSkills: [],
   bossesSpawned: 0,
-  username: localStorage.getItem('skillgen_username') || 'ptr734876'
+  username: getOrCreateGuestUsername()
 };
 
 const player = {
@@ -964,8 +975,9 @@ function updateGenerativeHud() {
       ? state.generatedSkills.slice(0, 5).map(skill => `
           <div class="generated">
             <div class="generated-head">
+              <div class="trait-hash-badge">${skill.traitHash || '#TRAIT'}</div>
               <b>${skill.name} // LV ${skill.level}</b>
-              <small>${skill.confidence}% CONF</small>
+              <small>${skill.confidence}%</small>
             </div>
             <small style="color:var(--mint);display:block;margin-top:2px;">▲ ${skill.buff}</small>
             <small style="color:var(--red);display:block;margin-top:1px;">▼ ${skill.debuff}</small>
@@ -1089,6 +1101,7 @@ function updateAnalysis() {
     ui.skillGraph.innerHTML = state.generatedSkills.length
       ? state.generatedSkills.map(skill => `
           <div class="skill-node">
+            <div class="trait-hash-badge" style="margin-bottom:4px;">${skill.traitHash || '#TRAIT'}</div>
             <b>${skill.name}</b>
             <small>${skill.pattern} · LV ${skill.level}</small>
             <strong style="color:var(--mint);display:block;margin-top:4px;">Бафф: ${skill.buff}</strong>

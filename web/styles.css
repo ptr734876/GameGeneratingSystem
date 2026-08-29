@@ -682,3 +682,16 @@ button { font: inherit; color: inherit; cursor: pointer; }
   color: var(--gold);
   box-shadow: 0 0 10px rgba(244, 189, 98, 0.2);
 }
+
+
+.trait-hash-badge {
+  font: 700 9px 'Space Mono', monospace;
+  color: var(--mint);
+  background: rgba(134, 224, 177, 0.12);
+  border: 1px solid rgba(134, 224, 177, 0.35);
+  padding: 2px 5px;
+  border-radius: 2px;
+  letter-spacing: .5px;
+  display: inline-block;
+  margin-right: 4px;
+}
