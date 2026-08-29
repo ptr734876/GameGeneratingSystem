@@ -30,264 +30,264 @@ const STAT_TAGS = {
 const SEMANTIC_RULES = {
   // Class D: Common basic movement
   move: {
-    name: 'Kinetic Stride', tier: 'common', threshold: 40, styleClass: 'D',
+    name: 'Kinetic Stride', tier: 'common', threshold: 40,
     buff: { stat: 'moveSpeed', base: 0.5, unit: '%', label: 'скорость движения' },
     debuff: { stat: 'targetRange', base: 1.6, unit: '%', label: 'сужение сектора при беге' }
   },
 
   // Class C: Tactical 1-step positioning
   standstill: {
-    name: 'Siege Protocol', tier: 'uncommon', threshold: 20, styleClass: 'C',
+    name: 'Siege Protocol', tier: 'uncommon', threshold: 20,
     buff: { stat: 'damage', base: 2.5, unit: '%', label: 'осадный урон' },
     debuff: { stat: 'moveSpeed', base: 1.4, unit: '%', label: 'инерция старта' }
   },
   dash: {
-    name: 'Slipstream Step', tier: 'uncommon', threshold: 18, styleClass: 'C',
+    name: 'Slipstream Step', tier: 'uncommon', threshold: 18,
     buff: { stat: 'dashDistance', base: 2.5, unit: '%', label: 'дистанция рывка' },
     debuff: { stat: 'attackSpeed', base: 1.4, unit: '%', label: 'задержка прицела' }
   },
   manual_shot: {
-    name: 'Manual Reflex', tier: 'uncommon', threshold: 25, styleClass: 'C',
+    name: 'Manual Reflex', tier: 'uncommon', threshold: 25,
     buff: { stat: 'attackSpeed', base: 1.8, unit: '%', label: 'темп ручной стрельбы' },
     debuff: { stat: 'moveSpeed', base: 0.8, unit: '%', label: 'стрельба на бегу' }
   },
   point_blank_hit: {
-    name: 'Point Blank Blast', tier: 'uncommon', threshold: 20, styleClass: 'C',
+    name: 'Point Blank Blast', tier: 'uncommon', threshold: 20,
     buff: { stat: 'damage', base: 3.0, unit: '%', label: 'контактный урон' },
     debuff: { stat: 'targetRange', base: 2.2, unit: '%', label: 'ближний фокус' }
   },
   sniper_hit: {
-    name: 'Longshot Cadence', tier: 'uncommon', threshold: 20, styleClass: 'C',
+    name: 'Longshot Cadence', tier: 'uncommon', threshold: 20,
     buff: { stat: 'targetRange', base: 3.5, unit: '%', label: 'дальнобойный фокус' },
     debuff: { stat: 'attackSpeed', base: 1.6, unit: '%', label: 'время наводки' }
   },
   crit: {
-    name: 'Lethal Exposure', tier: 'uncommon', threshold: 15, styleClass: 'C',
+    name: 'Lethal Exposure', tier: 'uncommon', threshold: 15,
     buff: { stat: 'critChance', base: 1.2, unit: '%', label: 'шанс крита' },
     debuff: { stat: 'armor', base: 0.8, unit: '', label: 'агрессивная стойка' }
   },
   close_call: {
-    name: 'Adrenaline Reflex', tier: 'uncommon', threshold: 12, styleClass: 'C',
+    name: 'Adrenaline Reflex', tier: 'uncommon', threshold: 12,
     buff: { stat: 'moveSpeed', base: 0.8, unit: '%', label: 'адреналиновая скорость' },
     debuff: { stat: 'damage', base: 1.4, unit: '%', label: 'уход в оборону' }
   },
   kill: {
-    name: 'Soul Siphon', tier: 'uncommon', threshold: 25, styleClass: 'C',
+    name: 'Soul Siphon', tier: 'uncommon', threshold: 25,
     buff: { stat: 'healPower', base: 1.8, unit: '%', label: 'вампиризм лечения' },
     debuff: { stat: 'targetRange', base: 1.4, unit: '%', label: 'сбор эссенции' }
   },
   damage_taken: {
-    name: 'Iron Conditioning', tier: 'uncommon', threshold: 15, styleClass: 'C',
+    name: 'Iron Conditioning', tier: 'uncommon', threshold: 15,
     buff: { stat: 'armor', base: 1.0, unit: '', label: 'динамическая броня' },
     debuff: { stat: 'moveSpeed', base: 0.6, unit: '%', label: 'контузия' }
   },
   heal: {
-    name: 'Recovery Loop', tier: 'uncommon', threshold: 10, styleClass: 'C',
+    name: 'Recovery Loop', tier: 'uncommon', threshold: 10,
     buff: { stat: 'healPower', base: 2.5, unit: '%', label: 'сила лечения' },
     debuff: { stat: 'dashDistance', base: 1.6, unit: '%', label: 'регенеративный транс' }
   },
   swarmer_hit: {
-    name: 'Swarmer Shredder', tier: 'uncommon', threshold: 25, styleClass: 'C',
+    name: 'Swarmer Shredder', tier: 'uncommon', threshold: 25,
     buff: { stat: 'attackSpeed', base: 1.6, unit: '%', label: 'темп против роя' },
     debuff: { stat: 'targetRange', base: 1.2, unit: '%', label: 'рассеивание огня' }
   },
   ranger_hit: {
-    name: 'Counter-Sniper', tier: 'uncommon', threshold: 18, styleClass: 'C',
+    name: 'Counter-Sniper', tier: 'uncommon', threshold: 18,
     buff: { stat: 'targetRange', base: 2.5, unit: '%', label: 'дальность против стрелков' },
     debuff: { stat: 'dashDistance', base: 1.4, unit: '%', label: 'контр-батарейная стойка' }
   },
   tank_hit: {
-    name: 'Armor Piercer', tier: 'uncommon', threshold: 15, styleClass: 'C',
+    name: 'Armor Piercer', tier: 'uncommon', threshold: 15,
     buff: { stat: 'damage', base: 2.8, unit: '%', label: 'бронебойный урон' },
     debuff: { stat: 'attackSpeed', base: 1.2, unit: '%', label: 'тяжелый калибр' }
   },
   stalker_hit: {
-    name: 'Interceptor Edge', tier: 'uncommon', threshold: 15, styleClass: 'C',
+    name: 'Interceptor Edge', tier: 'uncommon', threshold: 15,
     buff: { stat: 'moveSpeed', base: 0.6, unit: '%', label: 'скорость перехвата' },
     debuff: { stat: 'armor', base: 0.6, unit: '', label: 'риск маневра' }
   },
   mortar_hit: {
-    name: 'Artillery Breaker', tier: 'uncommon', threshold: 12, styleClass: 'C',
+    name: 'Artillery Breaker', tier: 'uncommon', threshold: 12,
     buff: { stat: 'dashCooldown', base: 2.2, unit: '%', label: 'кд рывка от залпов' },
     debuff: { stat: 'targetRange', base: 1.2, unit: '%', label: 'уклонение от мин' }
   },
 
   // Class B: Tactical 2-step combos
   'move→dash': {
-    name: 'Vector Drift', tier: 'uncommon', threshold: 15, styleClass: 'B',
+    name: 'Vector Drift', tier: 'uncommon', threshold: 15,
     buff: { stat: 'dashCooldown', base: 2.5, unit: '%', label: 'перезарядка рывка' },
     debuff: { stat: 'damage', base: 1.4, unit: '%', label: 'перенаправление энергии' }
   },
   'dash→move': {
-    name: 'Flow Recovery', tier: 'uncommon', threshold: 15, styleClass: 'B',
+    name: 'Flow Recovery', tier: 'uncommon', threshold: 15,
     buff: { stat: 'moveSpeed', base: 0.6, unit: '%', label: 'спринт после рывка' },
     debuff: { stat: 'healPower', base: 1.8, unit: '%', label: 'нагрузка восстановления' }
   },
   'standstill→sniper_hit': {
-    name: 'Turret Overwatch', tier: 'rare', threshold: 12, styleClass: 'B',
+    name: 'Turret Overwatch', tier: 'rare', threshold: 12,
     buff: { stat: 'targetRange', base: 4.5, unit: '%', label: 'дальнобойная стойка' },
     debuff: { stat: 'moveSpeed', base: 1.6, unit: '%', label: 'неподвижность' }
   },
   'kill→multikill': {
-    name: 'Rampage Surge', tier: 'rare', threshold: 10, styleClass: 'B',
+    name: 'Rampage Surge', tier: 'rare', threshold: 10,
     buff: { stat: 'attackSpeed', base: 2.6, unit: '%', label: 'шквальный темп' },
     debuff: { stat: 'dashDistance', base: 1.8, unit: '%', label: 'фиксация в секторе' }
   },
   multikill: {
-    name: 'Rampage Catalyst', tier: 'rare', threshold: 10, styleClass: 'B',
+    name: 'Rampage Catalyst', tier: 'rare', threshold: 10,
     buff: { stat: 'attackSpeed', base: 2.4, unit: '%', label: 'боевой раж' },
     debuff: { stat: 'dashDistance', base: 2.0, unit: '%', label: 'фиксация в зоне' }
   },
   charged_shot: {
-    name: 'Overcharge Blast', tier: 'uncommon', threshold: 12, styleClass: 'B',
+    name: 'Overcharge Blast', tier: 'uncommon', threshold: 12,
     buff: { stat: 'damage', base: 3.8, unit: '%', label: 'сила заряда' },
     debuff: { stat: 'moveSpeed', base: 1.2, unit: '%', label: 'замедление при зарядке' }
   },
 
   // Class A: Rare high-skill actions & parry
   parry: {
-    name: 'Deflect Matrix', tier: 'rare', threshold: 5, styleClass: 'A',
+    name: 'Deflect Matrix', tier: 'rare', threshold: 5,
     buff: { stat: 'damage', base: 4.2, unit: '%', label: 'урон парирования' },
     debuff: { stat: 'maxHp', base: 2.0, unit: '', label: 'риск тайминга' }
   },
   boss_hit: {
-    name: 'Titan Slayer', tier: 'rare', threshold: 12, styleClass: 'A',
+    name: 'Titan Slayer', tier: 'rare', threshold: 12,
     buff: { stat: 'damage', base: 3.5, unit: '%', label: 'урон по титанам' },
     debuff: { stat: 'attackSpeed', base: 1.0, unit: '%', label: 'сосредоточенный удар' }
   },
   wave_clear: {
-    name: 'Floor Architect', tier: 'rare', threshold: 2, styleClass: 'A',
+    name: 'Floor Architect', tier: 'rare', threshold: 2,
     buff: { stat: 'maxHp', base: 3.0, unit: '', label: 'max HP' },
     debuff: { stat: 'moveSpeed', base: 0.4, unit: '%', label: 'наращивание бронелистов' }
   },
   'dash→dash': {
-    name: 'Phase Flicker', tier: 'rare', threshold: 12, styleClass: 'A',
+    name: 'Phase Flicker', tier: 'rare', threshold: 12,
     buff: { stat: 'dashDistance', base: 3.5, unit: '%', label: 'серийный рывок' },
     debuff: { stat: 'armor', base: 0.8, unit: '', label: 'фазовая дестабилизация' }
   },
   'point_blank_hit→crit': {
-    name: 'Lethal Point Blank', tier: 'rare', threshold: 10, styleClass: 'A',
+    name: 'Lethal Point Blank', tier: 'rare', threshold: 10,
     buff: { stat: 'critChance', base: 2.0, unit: '%', label: 'контактный крит' },
     debuff: { stat: 'dashDistance', base: 1.8, unit: '%', label: 'жесткая отдача' }
   },
   'sniper_hit→crit': {
-    name: 'Precision Caliber', tier: 'rare', threshold: 10, styleClass: 'A',
+    name: 'Precision Caliber', tier: 'rare', threshold: 10,
     buff: { stat: 'critChance', base: 2.2, unit: '%', label: 'снайперский крит' },
     debuff: { stat: 'moveSpeed', base: 0.5, unit: '%', label: 'фиксация цели' }
   },
   'sniper_hit→kill': {
-    name: 'Longshot Execution', tier: 'rare', threshold: 10, styleClass: 'A',
+    name: 'Longshot Execution', tier: 'rare', threshold: 10,
     buff: { stat: 'critChance', base: 2.0, unit: '%', label: 'шанс крита снайпера' },
     debuff: { stat: 'attackSpeed', base: 1.2, unit: '%', label: 'позиционная перезарядка' }
   },
   'crit→kill': {
-    name: 'Fatal Impact', tier: 'rare', threshold: 10, styleClass: 'A',
+    name: 'Fatal Impact', tier: 'rare', threshold: 10,
     buff: { stat: 'damage', base: 3.2, unit: '%', label: 'добивающий урон' },
     debuff: { stat: 'armor', base: 0.8, unit: '', label: 'боевой раж' }
   },
   'kill→kill': {
-    name: 'Chain Extermination', tier: 'rare', threshold: 12, styleClass: 'A',
+    name: 'Chain Extermination', tier: 'rare', threshold: 12,
     buff: { stat: 'damage', base: 2.4, unit: '%', label: 'урон серии' },
     debuff: { stat: 'armor', base: 0.8, unit: '', label: 'боевой раж' }
   },
   'damage_taken→heal': {
-    name: 'Vampiric Rebound', tier: 'rare', threshold: 8, styleClass: 'A',
+    name: 'Vampiric Rebound', tier: 'rare', threshold: 8,
     buff: { stat: 'healPower', base: 3.0, unit: '%', label: 'эффективность лечения' },
     debuff: { stat: 'damage', base: 1.8, unit: '%', label: 'защитная регенерация' }
   },
   'damage_taken→kill': {
-    name: 'Vengeful Retaliation', tier: 'rare', threshold: 8, styleClass: 'A',
+    name: 'Vengeful Retaliation', tier: 'rare', threshold: 8,
     buff: { stat: 'damage', base: 3.5, unit: '%', label: 'урон возмездия' },
     debuff: { stat: 'armor', base: 1.2, unit: '', label: 'ярость берсерка' }
   },
 
   // Class S: Precision Ripostes & Dynamic In-Combat Charges
   'parry→kill': {
-    name: 'Riposte Execution', tier: 'rare', threshold: 4, styleClass: 'S',
+    name: 'Riposte Execution', tier: 'rare', threshold: 4,
     buff: { stat: 'critChance', base: 2.8, unit: '%', label: 'контратакующий крит' },
     debuff: { stat: 'moveSpeed', base: 0.5, unit: '%', label: 'фиксация парирования' }
   },
   'dash→parry': {
-    name: 'Vanguard Deflection', tier: 'rare', threshold: 4, styleClass: 'S',
+    name: 'Vanguard Deflection', tier: 'rare', threshold: 4,
     buff: { stat: 'armor', base: 1.6, unit: '', label: 'динамический барьер' },
     debuff: { stat: 'attackSpeed', base: 1.2, unit: '%', label: 'задержка взмаха' }
   },
   'dash→charged_shot': {
-    name: 'Drift Railgun', tier: 'rare', threshold: 8, styleClass: 'S',
+    name: 'Drift Railgun', tier: 'rare', threshold: 8,
     buff: { stat: 'damage', base: 4.5, unit: '%', label: 'залп с выката' },
     debuff: { stat: 'dashCooldown', base: 2.0, unit: '%', label: 'перегрев привода' }
   },
   'charged_shot→kill': {
-    name: 'Kinetic Annihilation', tier: 'rare', threshold: 6, styleClass: 'S',
+    name: 'Kinetic Annihilation', tier: 'rare', threshold: 6,
     buff: { stat: 'critChance', base: 2.5, unit: '%', label: 'шанс пробития' },
     debuff: { stat: 'attackSpeed', base: 1.4, unit: '%', label: 'пауза охлаждения' }
   },
   'dash→point_blank_hit': {
-    name: 'Assassin Rush', tier: 'rare', threshold: 12, styleClass: 'S',
+    name: 'Assassin Rush', tier: 'rare', threshold: 12,
     buff: { stat: 'damage', base: 3.8, unit: '%', label: 'урон выпада' },
     debuff: { stat: 'armor', base: 1.0, unit: '', label: 'риск ближнего боя' }
   },
   'dash→sniper_hit': {
-    name: 'Mobile Marksman', tier: 'rare', threshold: 12, styleClass: 'S',
+    name: 'Mobile Marksman', tier: 'rare', threshold: 12,
     buff: { stat: 'targetRange', base: 4.0, unit: '%', label: 'снайперский рывок' },
     debuff: { stat: 'attackSpeed', base: 1.8, unit: '%', label: 'калибровка в движении' }
   },
   'close_call→dash': {
-    name: 'Hyper Reflex', tier: 'rare', threshold: 8, styleClass: 'S',
+    name: 'Hyper Reflex', tier: 'rare', threshold: 8,
     buff: { stat: 'dashDistance', base: 3.5, unit: '%', label: 'сверхрывок' },
     debuff: { stat: 'attackSpeed', base: 1.6, unit: '%', label: 'сбив прицела' }
   },
   'close_call→sniper_hit': {
-    name: 'Evasive Return', tier: 'rare', threshold: 8, styleClass: 'S',
+    name: 'Evasive Return', tier: 'rare', threshold: 8,
     buff: { stat: 'targetRange', base: 3.8, unit: '%', label: 'ответный выстрел' },
     debuff: { stat: 'damage', base: 1.2, unit: '%', label: 'беглая наводка' }
   },
 
   // Class SS: 3-step Mastery Combos
   'dash→point_blank_hit→kill': {
-    name: 'Shadow Executioner', tier: 'legendary', threshold: 6, styleClass: 'SS',
+    name: 'Shadow Executioner', tier: 'legendary', threshold: 6,
     buff: { stat: 'damage', base: 4.8, unit: '%', label: 'смертоносный выпад' },
     debuff: { stat: 'armor', base: 0.6, unit: '', label: 'риск ближнего контакта' }
   },
   'close_call→dash→point_blank_hit': {
-    name: 'Counter-Strike Rush', tier: 'legendary', threshold: 5, styleClass: 'SS',
+    name: 'Counter-Strike Rush', tier: 'legendary', threshold: 5,
     buff: { stat: 'damage', base: 4.5, unit: '%', label: 'контратака в упор' },
     debuff: { stat: 'dashDistance', base: 1.2, unit: '%', label: 'резкое торможение' }
   },
   'close_call→dash→sniper_hit': {
-    name: 'Evasive Marksman', tier: 'legendary', threshold: 5, styleClass: 'SS',
+    name: 'Evasive Marksman', tier: 'legendary', threshold: 5,
     buff: { stat: 'critChance', base: 2.4, unit: '%', label: 'контратакующий крит' },
     debuff: { stat: 'moveSpeed', base: 0.4, unit: '%', label: 'снайперская стойка' }
   },
   'point_blank_hit→crit→kill': {
-    name: 'Executioner Core', tier: 'legendary', threshold: 5, styleClass: 'SS',
+    name: 'Executioner Core', tier: 'legendary', threshold: 5,
     buff: { stat: 'damage', base: 5.0, unit: '%', label: 'казнящий контакт' },
     debuff: { stat: 'targetRange', base: 1.5, unit: '%', label: 'ближний туннель' }
   },
   'sniper_hit→crit→multikill': {
-    name: 'Cascade Annihilation', tier: 'legendary', threshold: 5, styleClass: 'SS',
+    name: 'Cascade Annihilation', tier: 'legendary', threshold: 5,
     buff: { stat: 'attackSpeed', base: 3.2, unit: '%', label: 'каскадный шквал' },
     debuff: { stat: 'damage', base: 1.2, unit: '%', label: 'нагрев орудий' }
   },
   'damage_taken→dash→heal': {
-    name: 'Phoenix Resurgence', tier: 'legendary', threshold: 5, styleClass: 'SS',
+    name: 'Phoenix Resurgence', tier: 'legendary', threshold: 5,
     buff: { stat: 'healPower', base: 4.0, unit: '%', label: 'аварийное восстановление' },
     debuff: { stat: 'targetRange', base: 1.0, unit: '%', label: 'фокус на защите' }
   },
 
   // Class SSS: 4-step Ultimate Execution Chains
   'close_call→dash→point_blank_hit→kill': {
-    name: 'Apex Predator Protocol', tier: 'legendary', threshold: 4, styleClass: 'SSS',
+    name: 'Apex Predator Protocol', tier: 'legendary', threshold: 4,
     buff: { stat: 'damage', base: 6.5, unit: '%', label: 'ультимативная казнь' },
     debuff: { stat: 'armor', base: 0.4, unit: '', label: 'сверхнагрузка' }
   },
   'close_call→dash→sniper_hit→crit': {
-    name: 'Phantom Longshot Zero', tier: 'legendary', threshold: 4, styleClass: 'SSS',
+    name: 'Phantom Longshot Zero', tier: 'legendary', threshold: 4,
     buff: { stat: 'critChance', base: 3.5, unit: '%', label: 'абсолютный крит' },
     debuff: { stat: 'moveSpeed', base: 0.3, unit: '%', label: 'снайперский ноль' }
   },
   'parry→dash→point_blank_hit→kill': {
-    name: 'Vanguard Counter-Annihilation', tier: 'legendary', threshold: 3, styleClass: 'SSS',
+    name: 'Vanguard Counter-Annihilation', tier: 'legendary', threshold: 3,
     buff: { stat: 'damage', base: 7.0, unit: '%', label: 'парирующий разрыв' },
     debuff: { stat: 'attackSpeed', base: 1.0, unit: '%', label: 'отдача разрыва' }
   }
@@ -442,7 +442,7 @@ export class GenerativeSkillEngine {
     const pattern = source.pattern;
     const rule = SEMANTIC_RULES[pattern] || this.fallbackRule(pattern);
     const tier = rule.tier || 'uncommon';
-    const styleClass = rule.styleClass || this.calculateStyleClass(pattern, tier);
+    
 
     const threshold = this.mode === 'fast' ? Math.max(2, Math.round(rule.threshold / 2.0)) : rule.threshold;
     const level = calcLevel(source.observations, threshold);
@@ -472,7 +472,7 @@ export class GenerativeSkillEngine {
     const bTag = STAT_TAGS[rule.buff.stat] || 'GEN';
     const dTag = (debuffVal > 0 && rule.debuff) ? (STAT_TAGS[rule.debuff.stat] || 'GEN') : 'CLR';
     const affixSuffix = affixCode ? ` [${affixCode}]` : '';
-    const traitHash = `#${actCode} ${bTag}:${dTag}-${styleClass}·L${level}${affixSuffix}`;
+    const traitHash = `#${actCode} ${bTag}:${dTag}·L${level}${affixSuffix}`;
 
     const sourceLabel = pattern.split('→').map(a => EVENT_LABELS[a] || a).join(' → ');
     const seed = hashString(`${this.seed}:${pattern}`);
@@ -487,8 +487,7 @@ export class GenerativeSkillEngine {
       name: traitHash,
       traitHash,
       tier,
-      styleClass,
-      pattern,
+            pattern,
       observations: source.observations,
       threshold,
       source: `${source.kind === 'sequence' ? 'Связка' : 'Действие'}: ${sourceLabel}`,
@@ -508,16 +507,7 @@ export class GenerativeSkillEngine {
     };
   }
 
-  calculateStyleClass(pattern, tier) {
-    const parts = pattern.split('→');
-    const len = parts.length;
-    if (len >= 5) return 'SSS+';
-    if (len === 4) return 'SSS';
-    if (len === 3) return 'SS';
-    if (tier === 'rare') return len <= 1 ? 'A' : 'S';
-    if (tier === 'uncommon') return len >= 2 ? 'B' : 'C';
-    return 'D';
-  }
+
 
   fallbackRule(pattern) {
     const parts = pattern.split('→');
@@ -532,8 +522,7 @@ export class GenerativeSkillEngine {
       return {
         name: `${parts.map(p => EVENT_LABELS[p] || p).join(' ')} Combo`,
         tier,
-        styleClass,
-        threshold: baseThreshold,
+                threshold: baseThreshold,
         buff: { stat: baseStat, base: baseStat === 'moveSpeed' ? 0.6 * comboLength : 2.2 * comboLength, unit: '%', label: 'маневренность' },
         debuff: { stat: 'armor', base: 0.4 * comboLength, unit: '', label: 'инерция' }
       };
@@ -543,8 +532,7 @@ export class GenerativeSkillEngine {
       return {
         name: `${parts.map(p => EVENT_LABELS[p] || p).join(' ')} Precision`,
         tier,
-        styleClass,
-        threshold: baseThreshold,
+                threshold: baseThreshold,
         buff: { stat: 'critChance', base: 1.2 * comboLength, unit: '%', label: 'точность' },
         debuff: { stat: 'dashDistance', base: 1.2 * comboLength, unit: '%', label: 'позиция' }
       };
@@ -553,8 +541,7 @@ export class GenerativeSkillEngine {
     return {
       name: `${parts.map(p => EVENT_LABELS[p] || p).join(' ')} Mastery`,
       tier,
-      styleClass,
-      threshold: baseThreshold,
+            threshold: baseThreshold,
       buff: { stat: 'damage', base: 2.0 * comboLength, unit: '%', label: 'урон' },
       debuff: { stat: 'moveSpeed', base: 0.5 * comboLength, unit: '%', label: 'отдача' }
     };

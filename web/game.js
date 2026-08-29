@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_25';
-import { SoundEngine } from './audio.js?v=20260829_25';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_26';
+import { SoundEngine } from './audio.js?v=20260829_26';
 
 function getOrCreateGuestUsername() {
   let stored = localStorage.getItem('skillgen_username');
@@ -1111,8 +1111,7 @@ function renderDeckDashboard() {
 
     ui.deckGrid.innerHTML = filtered.map(skill => {
       const isEq = skill.isEquipped;
-      const sc = skill.styleClass || 'D';
-      const lockBtnHtml = isEq
+            const lockBtnHtml = isEq
         ? `<button class="deck-lock-btn locked" disabled>LOCKED IN ✓</button>`
         : (isDeckFull
           ? `<button class="deck-lock-btn deck-full" disabled>SLOTS FULL (18/18)</button>`
@@ -1121,8 +1120,7 @@ function renderDeckDashboard() {
       return `
         <div class="deck-card ${isEq ? 'locked-in' : 'proposed'}">
           <div class="deck-card-top">
-            <span class="style-class-tag sc-${sc}">CLASS ${sc}</span>
-            <span style="font:700 11px 'Space Mono',monospace;color:var(--mint);">LV ${skill.level}</span>
+            <span style="font:700 12px 'Space Mono',monospace;color:var(--mint);background:rgba(134,224,177,.12);border:1px solid rgba(134,224,177,.3);padding:2px 8px;border-radius:2px;">LEVEL ${skill.level}</span>
             ${lockBtnHtml}
           </div>
           <b style="font-family:'Space Mono',monospace;color:var(--text);font-size:12px;display:block;margin-top:2px;">${skill.name}</b>
@@ -1285,7 +1283,7 @@ function updateAnalysis() {
           <div class="skill-node is-equipped">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
               <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:12px;">${skill.name}</b>
-              <span class="style-class-tag sc-${skill.styleClass || 'D'}">CLASS ${skill.styleClass || 'D'}</span>
+              <span style="font:700 11px 'Space Mono',monospace;color:var(--mint);">LV ${skill.level}</span>
             </div>
             <small>${skill.pattern} · LV ${skill.level}</small>
             <strong style="color:var(--mint);display:block;margin-top:4px;">Бафф: ${skill.buff}</strong>
