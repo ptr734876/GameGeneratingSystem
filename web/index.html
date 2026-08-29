@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260829_20">
+  <link rel="stylesheet" href="styles.css?v=20260829_21">
 </head>
 <body>
   <main class="shell">
@@ -21,7 +21,11 @@
         <span id="activeUser">OPERATOR: ptr734876</span><span class="telemetry-badge" title="Сбор размеченных данных сессии активен"><span class="rec-dot"></span>DATA REC</span>
         <button class="small-btn" id="loginModalBtn">SWITCH CALLSIGN</button>
       </div>
-      <div class="run-meta">
+      <div class="style-meter-badge rank-D" id="styleMeterBadge" title="Ранг стиля (D → SSS) увеличивает PTS множитель до x4.0!">
+          <span id="styleRankText">STYLE: D</span>
+          <small id="styleMultText">x1.0</small>
+        </div>
+        <div class="run-meta">
         <span id="phaseLabel">WAVE 01</span>
         <span class="live-dot"></span>
         <span id="statusLabel">LIVE RUN</span>
@@ -269,6 +273,6 @@
     </div>
   </div>
 
-  <script type="module" src="game.js?v=20260829_20"></script>
+  <script type="module" src="game.js?v=20260829_21"></script>
 </body>
 </html>

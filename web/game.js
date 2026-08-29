@@ -1,14 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_20';
-import { SoundEngine } from './audio.js?v=20260829_20';
-
-const canvas = document.querySelector('#game');
-const ctx = canvas.getContext('2d');
-const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(node => [node.id, node]));
-const TAU = Math.PI * 2;
-const clamp = (value, min, max) => Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : min;
-const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-export const effectiveDps = (baseDamage, damageMult, attackSpeed, critChance, critMult) => (baseDamage * damageMult) * attackSpeed * (1 + critChance * (critMult - 1));
-export const mitigatedDamage = (rawDamage, armor) => rawDamage * (100 / (100 + Math.max(0, armor)));
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_21';
+import { SoundEngine } from './audio.js?v=20260829_21';
 
 function getOrCreateGuestUsername() {
   let stored = localStorage.getItem('skillgen_username');
@@ -21,8 +12,27 @@ function getOrCreateGuestUsername() {
   return stored;
 }
 
+const canvas = document.querySelector('#game');
+const ctx = canvas.getContext('2d');
+const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(node => [node.id, node]));
+const TAU = Math.PI * 2;
+const clamp = (value, min, max) => Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : min;
+const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+export const effectiveDps = (baseDamage, damageMult, attackSpeed, critChance, critMult) => (baseDamage * damageMult) * attackSpeed * (1 + critChance * (critMult - 1));
+export const mitigatedDamage = (rawDamage, armor) => rawDamage * (100 / (100 + Math.max(0, armor)));
+
 const generator = new GenerativeSkillEngine();
 const audio = new SoundEngine();
+
+const STYLE_RANKS = [
+  { rank: 'D', min: 0, mult: 1.0, class: 'rank-D' },
+  { rank: 'C', min: 16, mult: 1.2, class: 'rank-C' },
+  { rank: 'B', min: 36, mult: 1.5, class: 'rank-B' },
+  { rank: 'A', min: 61, mult: 2.0, class: 'rank-A' },
+  { rank: 'S', min: 91, mult: 2.5, class: 'rank-S' },
+  { rank: 'SS', min: 131, mult: 3.2, class: 'rank-SS' },
+  { rank: 'SSS', min: 181, mult: 4.0, class: 'rank-SSS' }
+];
 
 const state = {
   mode: 'playing',
@@ -45,12 +55,18 @@ const state = {
   stillTimer: 0,
   telemetryTimer: 0,
   flawlessTimer: 0,
-  actionBuffer: [],
   totalInputs: 0,
   deathCause: 'combat',
   recentKills: [],
   keys: new Set(),
   mouse: { x: 0, y: 0, down: false },
+  charging: false,
+  chargeStartTime: 0,
+  chargeMult: 1.0,
+  stylePoints: 0,
+  styleRank: 'D',
+  styleMultiplier: 1.0,
+  actionBuffer: [],
   enemies: [],
   projectiles: [],
   particles: [],
@@ -111,12 +127,36 @@ function formatTime(seconds) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 }
 
+function addStyle(points) {
+  state.stylePoints = Math.min(250, state.stylePoints + points);
+  updateStyleMeter();
+}
+
+function updateStyleMeter() {
+  let active = STYLE_RANKS[0];
+  for (const sr of STYLE_RANKS) {
+    if (state.stylePoints >= sr.min) active = sr;
+  }
+  state.styleRank = active.rank;
+  state.styleMultiplier = active.mult;
+
+  if (ui.styleMeterBadge) {
+    ui.styleMeterBadge.className = `style-meter-badge ${active.class}`;
+  }
+  if (ui.styleRankText) ui.styleRankText.textContent = `STYLE: ${active.rank}`;
+  if (ui.styleMultText) ui.styleMultText.textContent = `x${active.mult.toFixed(1)}`;
+}
+
 function recordAction(action, customMeta = {}) {
   state.actions.push(action);
   if (state.actions.length > 80) state.actions.shift();
   state.actionCounts[action] = (state.actionCounts[action] || 0) + 1;
 
-  if (action === 'damage_taken') state.flawlessTimer = 0;
+  if (action === 'damage_taken') {
+    state.flawlessTimer = 0;
+    state.stylePoints = Math.max(0, state.stylePoints - 35);
+    updateStyleMeter();
+  }
 
   const currentMaxHp = clamp(player.maxHp + generatedValue('maxHp'), 50, 300);
   const context = {
@@ -126,36 +166,24 @@ function recordAction(action, customMeta = {}) {
     ...customMeta
   };
 
-  // Time-windowed multi-step combo buffer (combos up to 4 actions!)
   const now = state.elapsed;
   state.actionBuffer.push({ action, time: now });
 
-  // Dynamic combo window: scales comfortably as attack speed / mobility grows
   const comboWindow = 1.8;
   state.actionBuffer = state.actionBuffer.filter(item => (now - item.time) <= comboWindow);
 
-  // 1. Record single action
   generator.record(action, context);
 
-  // 2. Record 2-step, 3-step, and 4-step combos if performed within the time window!
   const bufLen = state.actionBuffer.length;
   if (bufLen >= 2) {
     const seq2 = `${state.actionBuffer[bufLen - 2].action}→${action}`;
     state.sequenceCounts[seq2] = (state.sequenceCounts[seq2] || 0) + 1;
     generator.record(seq2, context);
-
-    if (!state.sequenceMatrix[state.actionBuffer[bufLen - 2].action]) {
-      state.sequenceMatrix[state.actionBuffer[bufLen - 2].action] = {};
-    }
-    state.sequenceMatrix[state.actionBuffer[bufLen - 2].action][action] =
-      (state.sequenceMatrix[state.actionBuffer[bufLen - 2].action][action] || 0) + 1;
   }
-
   if (bufLen >= 3) {
     const seq3 = `${state.actionBuffer[bufLen - 3].action}→${state.actionBuffer[bufLen - 2].action}→${action}`;
     generator.record(seq3, context);
   }
-
   if (bufLen >= 4) {
     const seq4 = `${state.actionBuffer[bufLen - 4].action}→${state.actionBuffer[bufLen - 3].action}→${state.actionBuffer[bufLen - 2].action}→${action}`;
     generator.record(seq4, context);
@@ -204,8 +232,10 @@ function reset() {
     mode: 'playing', wave: 1, score: 0.0, kills: 0, damage: 0, bestHit: 0,
     elapsed: 0, dps: 0, lastDamage: 0, shake: 0,
     fireCooldown: 0, dashCooldown: 0, dashTime: 0, moveTimer: 0, stillTimer: 0,
-    telemetryTimer: 0, totalInputs: 0, deathCause: 'combat',
-    recentKills: [], enemies: [], projectiles: [], particles: [], texts: [],
+    telemetryTimer: 0, flawlessTimer: 0, totalInputs: 0, deathCause: 'combat',
+    charging: false, chargeStartTime: 0, chargeMult: 1.0,
+    stylePoints: 0, styleRank: 'D', styleMultiplier: 1.0,
+    actionBuffer: [], recentKills: [], enemies: [], projectiles: [], particles: [], texts: [],
     zones: [], obstacles: [], logs: [], actions: [], actionCounts: {},
     sequenceCounts: {}, sequenceMatrix: {}, combatTimeline: [], lastAction: null,
     generatedSkills: [], bossesSpawned: 0
@@ -225,6 +255,7 @@ function reset() {
   updateHud();
   fetchLeaderboard(state.leaderboardTab);
   updateModeUI();
+  updateStyleMeter();
 }
 
 function createArena() {
@@ -385,7 +416,14 @@ function scrollWorld(dx, dy) {
 
 function movePlayer(dt) {
   const direction = inputVector();
-  const moveSpeed = clamp(260 * (1 + generatedModifier('moveSpeed')), 180, 350);
+  let moveSpeed = clamp(260 * (1 + generatedModifier('moveSpeed')), 180, 350);
+
+  // Slow down during infinite mouse charge
+  if (state.charging) {
+    const holdSec = (performance.now() - state.chargeStartTime) / 1000;
+    state.chargeMult = 1.0 + holdSec * 1.5;
+    moveSpeed /= state.chargeMult;
+  }
 
   if (direction) {
     state.stillTimer = 0;
@@ -439,15 +477,45 @@ function dash() {
   recordAction('dash');
   player.vx = direction.x * dashDistance;
   player.vy = direction.y * dashDistance;
-  player.invuln = 0.40; // 100% complete invulnerability
+  player.invuln = 0.40;
   state.dashTime = 0.28;
   state.dashCooldown = cooldown;
   state.shake = 5;
   audio.playDash();
-  log('Dash // 100% i-frames engaged');
+
+  // 50% Chance Bullet Reflection on close dash
+  const effectiveCrit = generator.critRate(player.crit);
+  const damageBonus = generatedModifier('damage');
+  const actualDamage = clamp(player.damage * player.damageMult * (1 + damageBonus), 6, 250);
+
+  let reflectedAny = false;
+  for (const p of state.projectiles) {
+    if (p.damage < 0 && distance(p, player) <= player.r + 40) {
+      if (Math.random() < 0.50) {
+        const isCrit = Math.random() < effectiveCrit;
+        p.damage = Math.abs(p.damage) * 1.5 * (isCrit ? player.critMult : 1.0);
+        p.vx = -p.vx * 1.4;
+        p.vy = -p.vy * 1.4;
+        p.life = 2.5;
+        p.reflected = true;
+        reflectedAny = true;
+        state.particles.push({ x: p.x, y: p.y, r: 6, life: 0.3, color: '#f4bd62' });
+        state.texts.push({ x: p.x, y: p.y - 20, text: 'PARRY!', color: '#86e0b1', life: 0.8, vy: -20 });
+      }
+    }
+  }
+
+  if (reflectedAny) {
+    recordAction('parry');
+    addStyle(35);
+    audio.playCrit();
+    log('Parry // Bullets deflected!');
+  } else {
+    log('Dash // 100% i-frames engaged');
+  }
 }
 
-function fire() {
+function fireAuto() {
   if (state.fireCooldown > 0 || state.mode !== 'playing') return;
   const target = getAutoTarget();
   if (!target) return;
@@ -467,12 +535,56 @@ function fire() {
     life: 1.4,
     damage: actualDamage,
     critChance: effectiveCrit,
+    r: 3,
+    pierce: 1,
     target
   });
 
   const actualAttackSpeed = clamp(player.attackSpeed * (1 + attackBonus), 0.5, 8.0);
   state.fireCooldown = 1.0 / actualAttackSpeed;
   audio.playShot();
+}
+
+function releaseChargedShot() {
+  if (!state.charging || state.mode !== 'playing') return;
+  const holdSec = (performance.now() - state.chargeStartTime) / 1000;
+  const mult = 1.0 + holdSec * 1.5;
+
+  const angle = Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x);
+  const damageBonus = generatedModifier('damage');
+  const effectiveCrit = generator.critRate(player.crit);
+  const baseDmg = clamp(player.damage * player.damageMult * (1 + damageBonus), 6, 250);
+  const blastDmg = baseDmg * mult;
+
+  const radius = clamp(4 * Math.sqrt(mult), 4, 22);
+  const pierceCount = Math.floor(1 + holdSec * 1.5);
+
+  state.projectiles.push({
+    x: player.x + Math.cos(angle) * 20,
+    y: player.y + Math.sin(angle) * 20,
+    vx: Math.cos(angle) * clamp(570 + holdSec * 30, 570, 850),
+    vy: Math.sin(angle) * clamp(570 + holdSec * 30, 570, 850),
+    life: 1.8,
+    damage: blastDmg,
+    critChance: effectiveCrit,
+    r: radius,
+    pierce: pierceCount,
+    isCharged: holdSec >= 0.8
+  });
+
+  state.shake = Math.min(12, 3 + mult * 0.8);
+  state.charging = false;
+  state.chargeMult = 1.0;
+
+  if (holdSec >= 0.8) {
+    recordAction('charged_shot');
+    addStyle(25);
+    audio.playCrit();
+    state.texts.push({ x: player.x, y: player.y - 30, text: `CHARGE x${mult.toFixed(1)}!`, color: '#f4bd62', life: 1, vy: -20 });
+  } else {
+    recordAction('manual_shot');
+    audio.playShot();
+  }
 }
 
 function hitEnemy(enemy, raw, critical = false) {
@@ -486,12 +598,18 @@ function hitEnemy(enemy, raw, critical = false) {
   state.bestHit = Math.max(state.bestHit, damage);
 
   const hitDist = distance(player, enemy);
-  if (hitDist < 110) recordAction('point_blank_hit');
-  else if (hitDist > 420) recordAction('sniper_hit');
+  if (hitDist < 110) {
+    recordAction('point_blank_hit');
+    addStyle(15);
+  } else if (hitDist > 420) {
+    recordAction('sniper_hit');
+    addStyle(15);
+  }
 
   if (enemy.hitAction) recordAction(enemy.hitAction);
   if (critical) {
     recordAction('crit');
+    addStyle(12);
     audio.playCrit();
   } else {
     audio.playHit();
@@ -519,7 +637,7 @@ function killEnemy(enemy) {
 
   const isFast = (state.gameMode === 'fast');
   const waveScale = 1 + (state.wave - 1) * (isFast ? 0.40 : 0.15);
-  const earned = (enemy.baseScore || 0.01) * (enemy.isElite ? 3.0 : 1.0) * waveScale;
+  const earned = (enemy.baseScore || 0.01) * (enemy.isElite ? 3.0 : 1.0) * waveScale * state.styleMultiplier;
   state.score += earned;
 
   state.texts.push({
@@ -535,6 +653,7 @@ function killEnemy(enemy) {
   state.recentKills.push(now);
   if (state.recentKills.length >= 3) {
     recordAction('multikill');
+    addStyle(25);
     state.recentKills = [];
   }
 }
@@ -546,6 +665,10 @@ function updateCombat(dt) {
   player.invuln = Math.max(0, player.invuln - dt);
   player.speedBoost = Math.max(0, player.speedBoost - dt);
   state.flawlessTimer = (state.flawlessTimer || 0) + dt;
+
+  // Style Meter Decay
+  state.stylePoints = Math.max(0, state.stylePoints - dt * 5.0);
+  updateStyleMeter();
 
   const isInvulnerable = player.invuln > 0 || state.dashTime > 0;
 
@@ -561,12 +684,14 @@ function updateCombat(dt) {
       dps: Math.round(state.dps),
       kills: state.kills,
       wave: state.wave,
-      apm: Math.round(apm)
+      apm: Math.round(apm),
+      styleRank: state.styleRank
     });
     if (state.combatTimeline.length > 50) state.combatTimeline.shift();
   }
 
-  if (getAutoTarget()) fire();
+  // Auto fire
+  if (!state.charging && getAutoTarget()) fireAuto();
 
   // Projectile simulation & obstacle collision
   for (const projectile of state.projectiles) {
@@ -574,7 +699,6 @@ function updateCombat(dt) {
     projectile.y += projectile.vy * dt;
     projectile.life -= dt;
 
-    // Obstacle collision for ALL projectiles (player & enemy)
     for (const obstacle of state.obstacles) {
       if (distance(projectile, obstacle) < obstacle.r + 4) {
         projectile.life = 0;
@@ -584,13 +708,14 @@ function updateCombat(dt) {
     }
     if (projectile.life <= 0) continue;
 
-    // Player bullets hit enemies
+    // Player or Reflected bullets hit enemies
     if (projectile.damage > 0) {
       for (const enemy of state.enemies) {
-        if (enemy.hp > 0 && !enemy.dead && distance(projectile, enemy) < enemy.r + 6) {
+        if (enemy.hp > 0 && !enemy.dead && distance(projectile, enemy) < enemy.r + (projectile.r || 4) + 2) {
           const critical = Math.random() < (projectile.critChance || player.crit);
           hitEnemy(enemy, projectile.damage, critical);
-          projectile.life = 0;
+          projectile.pierce = (projectile.pierce || 1) - 1;
+          if (projectile.pierce <= 0) projectile.life = 0;
           break;
         }
       }
@@ -605,6 +730,7 @@ function updateCombat(dt) {
       if (d < player.r + 32 && d > player.r + 6 && !isInvulnerable) {
         if (!projectile.closeCallRecorded) {
           recordAction('close_call');
+          addStyle(18);
           projectile.closeCallRecorded = true;
         }
       }
@@ -679,7 +805,6 @@ function updateCombat(dt) {
       if (od < avoidDist && od > 0.001) {
         const pushX = (enemy.x - obstacle.x) / od;
         const pushY = (enemy.y - obstacle.y) / od;
-        // Tangent vector to glide smoothly around obstacle
         const tangentX = -pushY;
         const tangentY = pushX;
         const dot = moveDirX * tangentX + moveDirY * tangentY;
@@ -787,7 +912,7 @@ function updateCombat(dt) {
       }
     }
 
-    // Hard Enemy-to-Player collision (enemies CANNOT clip inside the player)
+    // Hard Enemy-to-Player collision
     const pdx = enemy.x - player.x;
     const pdy = enemy.y - player.y;
     const minPlayerDist = player.r + enemy.r;
@@ -808,7 +933,7 @@ function updateCombat(dt) {
     if (enemy.hp <= 0 && !enemy.dead) killEnemy(enemy);
   }
 
-  // Mob-to-Mob Separation (Enemies CANNOT clip inside each other)
+  // Mob-to-Mob Soft Separation
   const enemyCount = state.enemies.length;
   for (let i = 0; i < enemyCount; i++) {
     const a = state.enemies[i];
@@ -852,6 +977,7 @@ function heal(amount) {
 
 function clearWave() {
   recordAction('wave_clear');
+  addStyle(30);
   audio.playWaveClear();
   state.wave++;
   heal(12);
@@ -956,7 +1082,7 @@ function gameOver() {
   sendTelemetry();
   if (ui.modalKicker) ui.modalKicker.textContent = 'RUN TERMINATED';
   if (ui.modalTitle) ui.modalTitle.textContent = `${formatTime(state.elapsed)} // ${state.kills} eliminated`;
-  if (ui.modalCopy) ui.modalCopy.textContent = `Operator [${state.username}] · Mode: [${state.gameMode.toUpperCase()}] · Score ${state.score.toFixed(2)} PTS · Damage dealt ${Math.round(state.damage)} · Best hit ${Math.round(state.bestHit)} · Wave ${state.wave}`;
+  if (ui.modalCopy) ui.modalCopy.textContent = `Operator [${state.username}] · Mode: [${state.gameMode.toUpperCase()}] · Rank [${state.styleRank}] · Score ${state.score.toFixed(2)} PTS · Damage dealt ${Math.round(state.damage)} · Best hit ${Math.round(state.bestHit)} · Wave ${state.wave}`;
   if (ui.choices) ui.choices.innerHTML = '';
   if (ui.restartButton) ui.restartButton.classList.remove('hidden');
   if (ui.modal) ui.modal.classList.remove('hidden');
@@ -966,24 +1092,48 @@ function hideModal() {
   if (ui.modal) ui.modal.classList.add('hidden');
   if (ui.restartButton) ui.restartButton.classList.add('hidden');
   if (ui.loginModal) ui.loginModal.classList.add('hidden');
+  if (ui.infoModal) ui.infoModal.classList.add('hidden');
+}
+
+function handleEquipClick(skillId) {
+  generator.toggleEquip(skillId);
+  state.generatedSkills = generator.snapshot();
+  updateHud();
+  if (state.mode === 'paused') updateAnalysis();
 }
 
 function updateGenerativeHud() {
-  if (ui.patternCount) ui.patternCount.textContent = `${state.generatedSkills.length} PATTERNS`;
+  const equippedCount = generator.equippedSkillIds.size;
+  if (ui.patternCount) ui.patternCount.textContent = `DECK: ${equippedCount} / 18 SLOTS`;
   if (ui.generatedList) {
     ui.generatedList.innerHTML = state.generatedSkills.length
-      ? state.generatedSkills.slice(0, 5).map(skill => `
-          <div class="generated">
-            <div class="generated-head">
-              <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:11px;">${skill.name}</b>
-              <small>${skill.confidence}%</small>
+      ? state.generatedSkills.slice(0, 6).map(skill => {
+          const isEq = skill.isEquipped;
+          const isFull = !isEq && equippedCount >= 18;
+          const btnClass = isEq ? 'equipped' : (isFull ? 'full' : '');
+          const btnText = isEq ? 'EQUIPPED ✓' : (isFull ? 'SLOTS FULL' : '+ EQUIP');
+          return `
+            <div class="generated ${isEq ? 'is-equipped' : 'unequipped'}">
+              <div class="generated-head">
+                <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:11px;">${skill.name}</b>
+                <button class="equip-btn ${btnClass}" data-skill-id="${skill.id}">${btnText}</button>
+              </div>
+              <small style="color:var(--mint);display:block;margin-top:2px;">▲ ${skill.buff}</small>
+              <small style="color:var(--red);display:block;margin-top:1px;">▼ ${skill.debuff}</small>
+              <div class="generated-track"><i style="width:${skill.progress * 100}%"></i></div>
             </div>
-            <small style="color:var(--mint);display:block;margin-top:2px;">▲ ${skill.buff}</small>
-            <small style="color:var(--red);display:block;margin-top:1px;">▼ ${skill.debuff}</small>
-            <div class="generated-track"><i style="width:${skill.progress * 100}%"></i></div>
-          </div>
-        `).join('')
+          `;
+        }).join('')
       : '<div class="empty-state">Collecting combat telemetry...</div>';
+
+    // Bind equip buttons
+    ui.generatedList.querySelectorAll('.equip-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const sid = btn.getAttribute('data-skill-id');
+        if (sid) handleEquipClick(sid);
+      };
+    });
   }
 }
 
@@ -1001,7 +1151,7 @@ function updateHud() {
   if (ui.healthText) ui.healthText.textContent = `${Math.ceil(player.hp)} / ${Math.round(currentMaxHp)}`;
   if (ui.healthBar) ui.healthBar.style.width = `${clamp((player.hp / currentMaxHp) * 100, 0, 100)}%`;
   if (ui.dashBar) ui.dashBar.style.width = `${clamp((1 - state.dashCooldown / 1.4) * 100, 0, 100)}%`;
-  if (ui.dashText) ui.dashText.textContent = state.dashCooldown ? 'CHARGING' : 'READY';
+  if (ui.dashText) ui.dashText.textContent = state.dashCooldown ? 'CHARGING' : 'READY (50% REFLECT)';
 
   const effectiveArmor = clamp(player.armor + generatedValue('armor'), 0, 60);
   if (ui.armor) ui.armor.textContent = effectiveArmor.toFixed(1);
@@ -1072,7 +1222,7 @@ function updateAnalysis() {
       </div>
       <div class="stat-breakdown-row">
         <span>DASH CORE (РЫВОК)</span>
-        <b>${Math.round(dashDist)} px <small style="color:var(--blue);">(Перезарядка: ${dashCd.toFixed(2)}с | 100% неуязвимость)</small></b>
+        <b>${Math.round(dashDist)} px <small style="color:var(--blue);">(КД: ${dashCd.toFixed(2)}с | 100% i-frames | 50% Отражение пуль)</small></b>
       </div>
       <div class="stat-breakdown-row">
         <span>TARGET RANGE (СЕКТОР АВТООГНЯ)</span>
@@ -1083,8 +1233,8 @@ function updateAnalysis() {
         <b>${healBonus >= 0 ? '+' : ''}${healBonus.toFixed(1)}% <small style="color:var(--mint);">(Бонус к восстановлению HP)</small></b>
       </div>
       <div class="stat-breakdown-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;">
-        <span>SCORE (ТЕКУЩИЕ PTS)</span>
-        <b style="color:var(--gold);font-size:14px;">${state.score.toFixed(2)} PTS <small>(${state.gameMode.toUpperCase()})</small></b>
+        <span>SCORE & STYLE (СЧЕТ И СТИЛЬ)</span>
+        <b style="color:var(--gold);font-size:14px;">${state.score.toFixed(2)} PTS <small>[${state.styleRank} x${state.styleMultiplier.toFixed(1)}] (${state.gameMode.toUpperCase()})</small></b>
       </div>
     `;
   }
@@ -1096,21 +1246,39 @@ function updateAnalysis() {
     ui.formulaResult.textContent = `= ${effectiveDps(player.damage, effectiveDamageMult, actualAttackSpeed, effectiveCrit, player.critMult).toFixed(2)} DPS`;
   }
 
+  const equippedCount = generator.equippedSkillIds.size;
   if (ui.skillGraph) {
     ui.skillGraph.innerHTML = state.generatedSkills.length
-      ? state.generatedSkills.map(skill => `
-          <div class="skill-node">
-            <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:12px;">${skill.name}</b>
-            <small>${skill.pattern} · LV ${skill.level}</small>
-            <strong style="color:var(--mint);display:block;margin-top:4px;">Бафф: ${skill.buff}</strong>
-            <strong style="color:var(--red);display:block;margin-top:2px;">Дебафф: ${skill.debuff}</strong>
-            <span>${skill.source}</span>
-            <span>Наблюдений: ${skill.observations} / Порог: ${skill.threshold}</span>
-            <span>Формула: ${skill.formula}</span>
-            <i style="width:${skill.progress * 100}%"></i>
-          </div>
-        `).join('')
-      : '<div class="empty-state">No stable pattern yet. Move, dash and fire to train the engine.</div>';
+      ? state.generatedSkills.map(skill => {
+          const isEq = skill.isEquipped;
+          const isFull = !isEq && equippedCount >= 18;
+          const btnText = isEq ? '✕ UNEQUIP' : (isFull ? 'SLOTS FULL (18/18)' : '+ EQUIP INTO DECK');
+          const btnClass = isEq ? 'equipped' : (isFull ? 'full' : '');
+          return `
+            <div class="skill-node ${isEq ? 'is-equipped' : 'unequipped'}">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:12px;">${skill.name}</b>
+                <button class="equip-btn ${btnClass}" data-skill-id="${skill.id}">${btnText}</button>
+              </div>
+              <small>${skill.pattern} · LV ${skill.level}</small>
+              <strong style="color:var(--mint);display:block;margin-top:4px;">Бафф: ${skill.buff}</strong>
+              <strong style="color:var(--red);display:block;margin-top:2px;">Дебафф: ${skill.debuff}</strong>
+              <span>${skill.source}</span>
+              <span>Наблюдений: ${skill.observations} / Порог: ${skill.threshold}</span>
+              <span>Формула: ${skill.formula}</span>
+              <i style="width:${skill.progress * 100}%"></i>
+            </div>
+          `;
+        }).join('')
+      : '<div class="empty-state">No stable pattern yet. Move, dash, aim and reflect bullets to train the engine.</div>';
+
+    ui.skillGraph.querySelectorAll('.equip-btn').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const sid = btn.getAttribute('data-skill-id');
+        if (sid) handleEquipClick(sid);
+      };
+    });
   }
 
   const recent = state.actions.slice(-8).join(' → ') || 'No events recorded';
@@ -1156,7 +1324,7 @@ function draw() {
     ctx.beginPath(); ctx.arc(obstacle.x, obstacle.y, obstacle.r, 0, TAU); ctx.fill(); ctx.stroke();
   }
 
-  if (target) {
+  if (target && !state.charging) {
     ctx.strokeStyle = 'rgba(134,224,177,.28)';
     ctx.setLineDash([5, 7]);
     ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(target.x, target.y); ctx.stroke();
@@ -1179,8 +1347,19 @@ function draw() {
   }
 
   for (const projectile of state.projectiles) {
-    ctx.fillStyle = projectile.damage < 0 ? '#f06d62' : '#f4bd62';
-    ctx.beginPath(); ctx.arc(projectile.x, projectile.y, projectile.damage < 0 ? 4 : 3, 0, TAU); ctx.fill();
+    if (projectile.reflected) {
+      ctx.fillStyle = '#86e0b1';
+      ctx.beginPath(); ctx.arc(projectile.x, projectile.y, 5, 0, TAU); ctx.fill();
+    } else if (projectile.isCharged) {
+      ctx.fillStyle = '#f4bd62';
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#f4bd62';
+      ctx.beginPath(); ctx.arc(projectile.x, projectile.y, projectile.r || 6, 0, TAU); ctx.fill();
+      ctx.shadowBlur = 0;
+    } else {
+      ctx.fillStyle = projectile.damage < 0 ? '#f06d62' : '#f4bd62';
+      ctx.beginPath(); ctx.arc(projectile.x, projectile.y, projectile.damage < 0 ? 4 : 3, 0, TAU); ctx.fill();
+    }
   }
 
   for (const enemy of state.enemies) {
@@ -1206,16 +1385,20 @@ function draw() {
     ctx.restore();
   }
 
+  // Draw Player
   ctx.save();
   ctx.translate(player.x, player.y);
-  const targetAngle = target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x);
+  const targetAngle = state.charging
+    ? Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x)
+    : (target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x));
+  
   const angleDelta = Math.atan2(Math.sin(targetAngle - player.angle), Math.cos(targetAngle - player.angle));
-  player.angle += angleDelta * Math.min(1, 0.14);
+  player.angle += angleDelta * Math.min(1, 0.16);
   ctx.rotate(player.angle);
 
-  // Invulnerability visual trail during dash
+  // Dash trail & invulnerability glow
   if (player.invuln > 0 || state.dashTime > 0) {
-    ctx.shadowBlur = 18;
+    ctx.shadowBlur = 20;
     ctx.shadowColor = '#86e0b1';
     ctx.fillStyle = '#ffffff';
   } else {
@@ -1228,6 +1411,34 @@ function draw() {
   ctx.moveTo(19, 0); ctx.lineTo(-12, -11); ctx.lineTo(-7, 0); ctx.lineTo(-12, 11); ctx.closePath();
   ctx.fill(); ctx.stroke();
   ctx.restore();
+
+  // Infinite Mouse Charge Visual Reticle
+  if (state.charging) {
+    const holdSec = (performance.now() - state.chargeStartTime) / 1000;
+    const mult = 1.0 + holdSec * 1.5;
+    const ringRadius = clamp(26 + holdSec * 6, 26, 65);
+
+    // Aim Laser Line to cursor
+    ctx.strokeStyle = 'rgba(244, 189, 98, 0.6)';
+    ctx.lineWidth = clamp(1 + holdSec * 0.8, 1, 6);
+    ctx.beginPath();
+    ctx.moveTo(player.x, player.y);
+    ctx.lineTo(state.mouse.x, state.mouse.y);
+    ctx.stroke();
+
+    // Charging Arc around player
+    ctx.strokeStyle = '#f4bd62';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y, ringRadius, 0, TAU * Math.min(1, holdSec / 3.0));
+    ctx.stroke();
+
+    // Real-time Damage Multiplier Readout
+    ctx.fillStyle = '#f4bd62';
+    ctx.font = '700 13px Space Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(`CHARGE ×${mult.toFixed(1)} DMG`, player.x, player.y - ringRadius - 10);
+  }
 
   for (const text of state.texts) {
     ctx.globalAlpha = clamp(text.life, 0, 1);
@@ -1267,10 +1478,6 @@ function loop(now) {
 function handleUserAudioUnlock() {
   audio.ensureContext();
 }
-window.addEventListener('pointerdown', () => {
-  handleUserAudioUnlock();
-  state.totalInputs++;
-}, { once: false });
 
 window.addEventListener('resize', resize);
 window.addEventListener('keydown', event => {
@@ -1280,6 +1487,7 @@ window.addEventListener('keydown', event => {
   if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) {
     if (event.code === 'Escape') {
       if (ui.loginModal) ui.loginModal.classList.add('hidden');
+      if (ui.infoModal) ui.infoModal.classList.add('hidden');
     }
     return;
   }
@@ -1315,8 +1523,21 @@ canvas.addEventListener('pointermove', event => {
   state.mouse.x = event.clientX - rect.left;
   state.mouse.y = event.clientY - rect.top;
 });
-canvas.addEventListener('pointerdown', () => state.mouse.down = true);
-window.addEventListener('pointerup', () => state.mouse.down = false);
+
+canvas.addEventListener('pointerdown', (e) => {
+  handleUserAudioUnlock();
+  state.totalInputs++;
+  state.mouse.down = true;
+  state.charging = true;
+  state.chargeStartTime = performance.now();
+});
+
+window.addEventListener('pointerup', () => {
+  state.mouse.down = false;
+  if (state.charging) {
+    releaseChargedShot();
+  }
+});
 
 if (ui.pauseButton) ui.pauseButton.onclick = togglePause;
 if (ui.resumeButton) ui.resumeButton.onclick = togglePause;
@@ -1335,9 +1556,7 @@ if (ui.audioToggleBtn) {
   };
 }
 
-// Operator Auth Modal
-
-// Info Guide Modal
+// Info Modal
 function toggleInfoModal() {
   if (!ui.infoModal) return;
   const isHidden = ui.infoModal.classList.contains('hidden');
@@ -1351,6 +1570,7 @@ function toggleInfoModal() {
 if (ui.infoModalBtn) ui.infoModalBtn.onclick = toggleInfoModal;
 if (ui.closeInfoBtn) ui.closeInfoBtn.onclick = toggleInfoModal;
 
+// Operator Auth Modal
 if (ui.loginModalBtn) {
   ui.loginModalBtn.onclick = () => {
     state.keys.clear();

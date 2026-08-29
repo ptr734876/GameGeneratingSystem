@@ -787,3 +787,71 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .info-tags-legend b {
   color: var(--mint);
 }
+
+
+/* Style Meter Badge in Topbar */
+.style-meter-badge {
+  font: 800 13px 'Space Mono', monospace;
+  padding: 4px 8px;
+  background: #101c1a;
+  border: 1px solid var(--mint);
+  color: var(--mint);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: .5px;
+  transition: all .15s ease;
+}
+.style-meter-badge.rank-D { border-color: #555; color: #888; }
+.style-meter-badge.rank-C { border-color: var(--blue); color: var(--blue); }
+.style-meter-badge.rank-B { border-color: var(--mint); color: var(--mint); }
+.style-meter-badge.rank-A { border-color: var(--gold); color: var(--gold); }
+.style-meter-badge.rank-S { border-color: #ff9f43; color: #ff9f43; box-shadow: 0 0 8px rgba(255,159,67,.3); }
+.style-meter-badge.rank-SS { border-color: #ee5253; color: #ee5253; box-shadow: 0 0 12px rgba(238,82,83,.4); }
+.style-meter-badge.rank-SSS { border-color: #ff3838; color: #fff; background: #c0392b; box-shadow: 0 0 16px rgba(255,56,56,.6); animation: sss-pulse .5s infinite alternate; }
+
+@keyframes sss-pulse {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+
+/* 18-Slot Build Deck Buttons & Badges */
+.deck-badge {
+  font: 700 10px 'Space Mono', monospace;
+  padding: 2px 6px;
+  background: #112420;
+  border: 1px solid var(--line-gold);
+  color: var(--gold);
+}
+
+.equip-btn {
+  font: 700 9px 'Space Mono', monospace;
+  padding: 3px 6px;
+  border: 1px solid var(--line);
+  background: #12211e;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.equip-btn:hover {
+  background: #19312d;
+  color: var(--text);
+}
+.equip-btn.equipped {
+  border-color: var(--mint);
+  background: rgba(134, 224, 177, 0.15);
+  color: var(--mint);
+}
+.equip-btn.full {
+  border-color: #555;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.generated.unequipped {
+  opacity: 0.55;
+  border-left: 2px solid #555;
+}
+.generated.is-equipped {
+  border-left: 2px solid var(--mint);
+}

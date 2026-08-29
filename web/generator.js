@@ -1,5 +1,6 @@
-// Advanced Generative Skill Engine (Version 3.3 - Calibrated Pacing & Trait Hash System)
-// Every passive displays a cyber-trait hash encoding its action source, buff, debuff, tier and level.
+// Advanced Generative Skill Engine (Version 4.0 - Build Deck & Mastery Engine)
+// Features: 18-Slot Active Build Management, Discovered Proposals Pool,
+// Manual Acceptance, Cyber-Trait Hashes, and Contextual Affixes.
 
 const EVENT_LABELS = {
   move: 'движение', standstill: 'неподвижность', dash: 'рывок',
@@ -7,7 +8,8 @@ const EVENT_LABELS = {
   kill: 'убийство', multikill: 'мульти-убийство', close_call: 'опасный пролет',
   damage_taken: 'полученный урон', heal: 'лечение', wave_clear: 'очистка волны',
   swarmer_hit: 'урон рою', ranger_hit: 'урон стрелку', tank_hit: 'урон танку',
-  stalker_hit: 'урон сталкеру', mortar_hit: 'урон миномету', boss_hit: 'урон боссу'
+  stalker_hit: 'урон сталкеру', mortar_hit: 'урон миномету', boss_hit: 'урон боссу',
+  parry: 'парирование', charged_shot: 'заряженный выстрел', manual_shot: 'ручной выстрел'
 };
 
 const ACT_TAGS = {
@@ -15,7 +17,7 @@ const ACT_TAGS = {
   sniper_hit: 'SNI', crit: 'CRT', kill: 'KIL', multikill: 'MLT',
   close_call: 'EVN', damage_taken: 'DMG', heal: 'HEL', wave_clear: 'WAV',
   swarmer_hit: 'SWR', tank_hit: 'TNK', ranger_hit: 'RNG', stalker_hit: 'STK',
-  mortar_hit: 'MOR', boss_hit: 'BOS'
+  mortar_hit: 'MOR', boss_hit: 'BOS', parry: 'PAR', charged_shot: 'CHG', manual_shot: 'MAN'
 };
 
 const STAT_TAGS = {
@@ -25,7 +27,7 @@ const STAT_TAGS = {
 };
 
 const SEMANTIC_RULES = {
-  // 1. Movement & Positioning Dynamics (Calibrated thresholds)
+  // 1. Movement & Positioning
   move: {
     name: 'Kinetic Stride', tier: 'common', threshold: 100,
     buff: { stat: 'moveSpeed', base: 0.5, unit: '%', label: 'скорость движения' },
@@ -67,7 +69,41 @@ const SEMANTIC_RULES = {
     debuff: { stat: 'armor', base: 0.8, unit: '', label: 'фазовая дестабилизация' }
   },
 
-  // 2. Tactical Range & Combat Positioning
+  // 2. Parry & Deflect Mastery
+  parry: {
+    name: 'Deflect Matrix', tier: 'rare', threshold: 6,
+    buff: { stat: 'damage', base: 4.2, unit: '%', label: 'урон парирования' },
+    debuff: { stat: 'maxHp', base: 2.0, unit: '', label: 'риск тайминга' }
+  },
+  'parry→kill': {
+    name: 'Riposte Execution', tier: 'rare', threshold: 5,
+    buff: { stat: 'critChance', base: 2.8, unit: '%', label: 'контратакующий крит' },
+    debuff: { stat: 'moveSpeed', base: 0.5, unit: '%', label: 'фиксация парирования' }
+  },
+  'dash→parry': {
+    name: 'Vanguard Deflection', tier: 'rare', threshold: 5,
+    buff: { stat: 'armor', base: 1.6, unit: '', label: 'динамический барьер' },
+    debuff: { stat: 'attackSpeed', base: 1.2, unit: '%', label: 'задержка взмаха' }
+  },
+
+  // 3. Manual Aim & Infinite Charged Shots
+  charged_shot: {
+    name: 'Overcharge Blast', tier: 'uncommon', threshold: 18,
+    buff: { stat: 'damage', base: 3.8, unit: '%', label: 'сила заряда' },
+    debuff: { stat: 'moveSpeed', base: 1.2, unit: '%', label: 'замедление при зарядке' }
+  },
+  'dash→charged_shot': {
+    name: 'Drift Railgun', tier: 'rare', threshold: 10,
+    buff: { stat: 'damage', base: 4.5, unit: '%', label: 'залп с выката' },
+    debuff: { stat: 'dashCooldown', base: 2.0, unit: '%', label: 'перегрев привода' }
+  },
+  'charged_shot→kill': {
+    name: 'Kinetic Annihilation', tier: 'rare', threshold: 8,
+    buff: { stat: 'critChance', base: 2.5, unit: '%', label: 'шанс пробития' },
+    debuff: { stat: 'attackSpeed', base: 1.4, unit: '%', label: 'пауза охлаждения' }
+  },
+
+  // 4. Tactical Range & Positioning
   point_blank_hit: {
     name: 'Point Blank Blast', tier: 'uncommon', threshold: 30,
     buff: { stat: 'damage', base: 3.0, unit: '%', label: 'контактный урон' },
@@ -109,7 +145,7 @@ const SEMANTIC_RULES = {
     debuff: { stat: 'attackSpeed', base: 1.2, unit: '%', label: 'позиционная перезарядка' }
   },
 
-  // 3. Crits, Evasion & Killstreaks
+  // 5. Crits, Evasion & Killstreaks
   crit: {
     name: 'Lethal Exposure', tier: 'uncommon', threshold: 25,
     buff: { stat: 'critChance', base: 1.2, unit: '%', label: 'шанс крита' },
@@ -156,7 +192,7 @@ const SEMANTIC_RULES = {
     debuff: { stat: 'dashDistance', base: 2.0, unit: '%', label: 'фиксация в зоне' }
   },
 
-  // 4. Damage Received & Counter-Attacks
+  // 6. Damage Taken & Survival
   damage_taken: {
     name: 'Iron Conditioning', tier: 'uncommon', threshold: 22,
     buff: { stat: 'armor', base: 1.0, unit: '', label: 'динамическая броня' },
@@ -183,7 +219,7 @@ const SEMANTIC_RULES = {
     debuff: { stat: 'dashDistance', base: 1.6, unit: '%', label: 'регенеративный транс' }
   },
 
-  // 5. Enemy Specific Adaptations
+  // 7. Enemy Specific Adaptations
   swarmer_hit: {
     name: 'Swarmer Shredder', tier: 'uncommon', threshold: 45,
     buff: { stat: 'attackSpeed', base: 1.6, unit: '%', label: 'темп против роя' },
@@ -220,7 +256,7 @@ const SEMANTIC_RULES = {
     debuff: { stat: 'moveSpeed', base: 0.4, unit: '%', label: 'наращивание бронелистов' }
   },
 
-  // 6. High-Order Mastery Combos
+  // 8. High-Order Mastery Combos
   'dash→point_blank_hit→kill': {
     name: 'Shadow Executioner', tier: 'legendary', threshold: 8,
     buff: { stat: 'damage', base: 4.8, unit: '%', label: 'смертоносный выпад' },
@@ -255,7 +291,6 @@ const SEMANTIC_RULES = {
 
 const hashString = value => [...value].reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 7) >>> 0;
 
-// Sub-exponential level curve without free jumps
 const calcLevel = (observations, threshold) => {
   if (!observations || observations < threshold) return 0;
   const ratio = observations / threshold;
@@ -293,6 +328,7 @@ export class GenerativeSkillEngine {
   constructor(seed = 184921) {
     this.seed = seed;
     this.mode = 'hardcore';
+    this.maxSlots = 18;
     this.reset();
   }
 
@@ -305,7 +341,33 @@ export class GenerativeSkillEngine {
     this.events = {};
     this.sequences = {};
     this.lastContext = {};
-    this.skills = [];
+    this.discoveredSkills = [];
+    this.equippedSkillIds = new Set();
+  }
+
+  // 18-Slot Build Deck Operations
+  isEquipped(skillId) {
+    return this.equippedSkillIds.has(skillId);
+  }
+
+  equip(skillId) {
+    if (this.equippedSkillIds.size >= this.maxSlots) {
+      return { success: false, reason: 'Слоты билда заполнены (18/18)' };
+    }
+    const exists = this.discoveredSkills.some(s => s.id === skillId);
+    if (!exists) return { success: false, reason: 'Навык не обнаружен' };
+    this.equippedSkillIds.add(skillId);
+    return { success: true, count: this.equippedSkillIds.size };
+  }
+
+  unequip(skillId) {
+    this.equippedSkillIds.delete(skillId);
+    return { success: true, count: this.equippedSkillIds.size };
+  }
+
+  toggleEquip(skillId) {
+    if (this.isEquipped(skillId)) return this.unequip(skillId);
+    return this.equip(skillId);
   }
 
   record(pattern, meta = {}) {
@@ -332,12 +394,20 @@ export class GenerativeSkillEngine {
       }))
     ];
 
-    this.skills = sources
+    const prevEquipped = new Set(this.equippedSkillIds);
+
+    this.discoveredSkills = sources
       .filter(source => source.observations > 0)
       .map(source => this.buildSkill(source, context))
       .filter(skill => skill.level >= 1)
-      .sort((a, b) => b.level - a.level || b.observations - a.observations)
-      .slice(0, 18);
+      .sort((a, b) => b.level - a.level || b.observations - a.observations);
+
+    // Auto-equip first discovered skills up to 18 if deck has room
+    for (const s of this.discoveredSkills) {
+      if (this.equippedSkillIds.size < this.maxSlots && !prevEquipped.size && this.discoveredSkills.length <= 18) {
+        this.equippedSkillIds.add(s.id);
+      }
+    }
   }
 
   buildSkill(source, context = {}) {
@@ -345,7 +415,6 @@ export class GenerativeSkillEngine {
     const rule = SEMANTIC_RULES[pattern] || this.fallbackRule(pattern);
     const tier = rule.tier || 'uncommon';
 
-    // Thresholds: In Fast Mode, thresholds are reduced 4.5x for rapid arcade progression
     const threshold = this.mode === 'fast' ? Math.max(2, Math.round(rule.threshold / 4.5)) : rule.threshold;
     const level = calcLevel(source.observations, threshold);
 
@@ -369,7 +438,6 @@ export class GenerativeSkillEngine {
     const buffVal = calcBuffValue(rule.buff.base * contextBonus, level);
     const debuffVal = calcDebuffValue(rule.debuff, level);
 
-    // Cyber Trait Hash as the official skill name
     const actParts = pattern.split('→');
     const actCode = actParts.map(p => ACT_TAGS[p] || p.slice(0, 3).toUpperCase()).join('+');
     const bTag = STAT_TAGS[rule.buff.stat] || 'GEN';
@@ -380,13 +448,14 @@ export class GenerativeSkillEngine {
 
     const sourceLabel = pattern.split('→').map(a => EVENT_LABELS[a] || a).join(' → ');
     const seed = hashString(`${this.seed}:${pattern}`);
+    const skillId = `skill_${seed.toString(16)}`;
 
     const debuffText = debuffVal > 0 && rule.debuff
       ? `-${debuffVal.toFixed(1)}${rule.debuff.unit} ${rule.debuff.label}`
       : 'Без штрафов';
 
     return {
-      id: `skill_${seed.toString(16)}`,
+      id: skillId,
       name: traitHash,
       traitHash,
       tier,
@@ -424,7 +493,7 @@ export class GenerativeSkillEngine {
       };
     }
 
-    if (parts.some(p => p === 'crit' || p === 'sniper_hit')) {
+    if (parts.some(p => p === 'crit' || p === 'sniper_hit' || p === 'charged_shot')) {
       return {
         name: `${parts.map(p => EVENT_LABELS[p] || p).join(' ')} Precision`,
         tier,
@@ -443,9 +512,11 @@ export class GenerativeSkillEngine {
     };
   }
 
+  // Modifiers are applied ONLY from EQUIPPED skills in the active 18-slot build!
   modifier(stat) {
     let total = 0;
-    for (const skill of this.skills) {
+    for (const skill of this.discoveredSkills) {
+      if (!this.equippedSkillIds.has(skill.id)) continue; // Not in active build
       if (skill.level < 1) continue;
       if (skill.buffEffect && skill.buffEffect.stat === stat) {
         total += skill.buffEffect.value;
@@ -469,7 +540,8 @@ export class GenerativeSkillEngine {
   critRate(baseCrit = 0.05) {
     const buffs = [];
     const debuffs = [];
-    for (const skill of this.skills) {
+    for (const skill of this.discoveredSkills) {
+      if (!this.equippedSkillIds.has(skill.id)) continue;
       if (skill.level < 1) continue;
       if (skill.buffEffect && skill.buffEffect.stat === 'critChance') {
         buffs.push(skill.buffEffect.value);
@@ -482,6 +554,9 @@ export class GenerativeSkillEngine {
   }
 
   snapshot() {
-    return this.skills.map(s => ({ ...s }));
+    return this.discoveredSkills.map(s => ({
+      ...s,
+      isEquipped: this.equippedSkillIds.has(s.id)
+    }));
   }
 }
