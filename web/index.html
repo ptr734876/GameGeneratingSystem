@@ -7,38 +7,188 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    .arena-wrap{height:680px}.arena-wrap canvas{height:100%;min-height:0}@media(max-width:900px){.arena-wrap{height:58vh;min-height:420px}.arena-wrap canvas{height:100%;min-height:0}}@media(max-width:560px){.arena-wrap{height:58vh;min-height:360px}}
-    .top-actions{display:flex;gap:8px}.generated-list{display:grid;gap:7px}.generated{border-left:2px solid var(--gold);background:#142227;padding:8px 10px}.generated-head{display:flex;justify-content:space-between}.generated b{font:600 15px 'Barlow Condensed',sans-serif}.generated small{color:var(--gold);font-size:9px}.generated-track{height:3px;background:#263636;margin-top:7px}.generated-track i{display:block;height:100%;background:var(--mint)}.empty-state{color:var(--muted);font-size:9px;line-height:1.5}.pause-screen{position:fixed;inset:0;background:rgba(3,8,10,.86);display:grid;place-items:center;padding:20px;z-index:6}.pause-panel{width:min(1100px,100%);max-height:92vh;overflow:auto;background:#101b20;border:1px solid #456158;padding:28px}.pause-head{display:flex;justify-content:space-between;align-items:start}.pause-panel h2{font:700 42px 'Barlow Condensed',sans-serif;margin:8px 0 24px}.analysis-grid{display:grid;grid-template-columns:1fr 1.4fr;gap:14px}.analysis-grid>section{border:1px solid var(--line);padding:16px}.analysis-title{font-size:10px;letter-spacing:1.3px;color:var(--gold);margin-bottom:8px}.analysis-note{color:var(--muted);font-size:9px;line-height:1.5;margin-bottom:12px}.pause-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}.pause-stat{border-bottom:1px solid var(--line);padding-bottom:8px}.pause-stat small{display:block;color:var(--muted);font-size:9px}.pause-stat b{font:600 24px 'Barlow Condensed',sans-serif}.formula{display:grid;gap:5px;background:#0b1518;margin-top:18px;padding:12px;color:var(--muted);font-size:9px}.formula b{color:var(--text);font-size:11px}.formula span{color:var(--mint);font-size:16px}.skill-graph{display:grid;grid-template-columns:1fr 1fr;gap:8px}.skill-node{border:1px solid #345048;padding:11px}.skill-node b{display:block;font:600 18px 'Barlow Condensed',sans-serif}.skill-node small,.skill-node span{display:block;color:var(--muted);font-size:9px;line-height:1.45;margin-top:4px}.skill-node strong{display:block;color:var(--mint);font-size:10px;margin-top:8px}.skill-node i{display:block;height:3px;background:var(--mint);margin-top:8px}.sequence{color:var(--muted);font-size:10px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}.sequence b{color:var(--text)}.pause-footer{display:flex;justify-content:space-between;color:var(--muted);font-size:9px;margin-top:18px}.pause-footer kbd{border:1px solid #3a514c;padding:3px 5px;color:var(--text)}
-    @media(max-width:560px){.analysis-grid{grid-template-columns:1fr}.pause-panel{padding:20px}.pause-panel h2{font-size:35px}.pause-footer{gap:10px;flex-direction:column}}
-  </style>
+  <link rel="stylesheet" href="styles.css?v=20260829_16">
 </head>
 <body>
   <main class="shell">
     <header class="topbar">
-      <div class="brand"><span class="brand-mark">S</span><div><strong>SKILLGEN</strong><small>ASHFALL PROTOCOL</small></div></div>
-      <div class="run-meta"><span id="phaseLabel">WAVE 01</span><span class="live-dot"></span><span id="statusLabel">LIVE RUN</span></div>
-      <div class="top-actions"><button class="icon-button" id="pauseButton" title="Пауза и анализ">Ⅱ</button><button class="icon-button" id="newRunButton" title="Начать новый забег">↻</button></div>
+      <div class="brand">
+        <span class="brand-mark">S</span>
+        <div><strong>SKILLGEN</strong><small>ASHFALL PROTOCOL</small></div>
+      </div>
+      <div class="operator-profile">
+        <span class="avatar-mini">◈</span>
+        <span id="activeUser">OPERATOR: ptr734876</span><span class="telemetry-badge" title="Сбор размеченных данных сессии активен"><span class="rec-dot"></span>DATA REC</span>
+        <button class="small-btn" id="loginModalBtn">SWITCH CALLSIGN</button>
+      </div>
+      <div class="run-meta">
+        <span id="phaseLabel">WAVE 01</span>
+        <span class="live-dot"></span>
+        <span id="statusLabel">LIVE RUN</span>
+      </div>
+      <div class="mode-selector">
+        <button class="mode-btn" id="modeToggleBtn" title="Переключить режим: Hardcore (10 мин) / Fast Mode (1 мин)">
+          <span id="modeIcon">🛡️</span> <span id="modeLabel">HARDCORE</span>
+        </button>
+      </div>
+      <div class="top-actions">
+        <button class="icon-button" id="audioToggleBtn" title="Звук и музыка (M)">🔊</button>
+        <button class="icon-button" id="pauseButton" title="Пауза и анализ (P / Esc)">Ⅱ</button>
+        <button class="icon-button" id="newRunButton" title="Начать новый забег">↻</button>
+      </div>
     </header>
+
     <section class="game-layout">
+      <!-- Dedicated Prominent Leaderboard Column -->
+      <aside class="leaderboard-sidebar">
+        <div class="leaderboard-panel">
+          <div class="leaderboard-header">
+            <span class="gold-badge">🏆 TOP 10</span>
+            <div>
+              <h3>HALL OF FAME</h3>
+              <small>GLOBAL PTS RANKING</small>
+            </div>
+          </div>
+          <div class="leaderboard-tabs">
+            <button class="lb-tab active" id="lbTabHardcore" data-mode="hardcore">🛡️ HARDCORE</button>
+            <button class="lb-tab" id="lbTabFast" data-mode="fast">⚡ FAST MODE</button>
+          </div>
+          <div id="leaderboardList" class="leaderboard-entries">
+            <div class="empty-state">Loading rankings...</div>
+          </div>
+          <div class="user-rank-box" id="userRankBox">
+            <div class="rank-label">CURRENT OPERATOR RANK</div>
+            <div class="rank-val">
+              <b id="userRankName">ptr734876</b>
+              <span id="userRankScore" class="gold-pts">134.25 PTS</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center Game Arena -->
       <div class="arena-wrap">
         <canvas id="game" aria-label="Игровая арена"></canvas>
         <div class="arena-vignette"></div>
-        <div class="boss-bar" id="bossBar"><div class="boss-name">WARDEN // ENRAGED</div><div class="meter"><i id="bossHealth"></i></div></div>
+        <div class="boss-bar" id="bossBar">
+          <div class="boss-name">WARDEN // ENRAGED</div>
+          <div class="meter"><i id="bossHealth"></i></div>
+        </div>
         <div class="controls"><kbd>WASD</kbd> MOVE <kbd>SPACE</kbd> DASH <span>AUTO-AIM ENGAGED</span></div>
+
+        <!-- In-Arena Pause Screen Overlay -->
+        <div class="pause-screen hidden" id="pauseScreen">
+          <div class="pause-head">
+            <div>
+              <div class="section-kicker">ANALYSIS MODE / RUN FROZEN</div>
+              <h2>Telemetry Inspector</h2>
+            </div>
+            <button class="icon-button" id="resumeButton" title="Продолжить (P / Esc)">×</button>
+          </div>
+          <div class="analysis-grid">
+            <section>
+              <div class="analysis-title">OPERATOR ATTRIBUTE MODEL</div>
+              <div id="pauseStats" class="stat-breakdown-list"></div>
+              <div class="formula">
+                <small>EFFECTIVE DPS MODEL</small>
+                <b id="dpsFormula"></b>
+                <span id="formulaResult" style="color:var(--mint);font-size:14px;"></span>
+              </div>
+            </section>
+            <section>
+              <div class="analysis-title">GENERATED SKILL GRAPH</div>
+              <div class="analysis-note">Dota 2 крит-стакинг · Асимметричный рост баффов (LV^0.70) над дебаффами (LV^0.45).</div>
+              <div id="skillGraph" class="skill-graph"></div>
+              <div class="sequence" id="sequenceView"></div>
+            </section>
+          </div>
+          <div class="pause-footer">
+            <span>RUN IS FROZEN · HUD AND LEADERBOARD ACTIVE</span>
+            <span><kbd>P</kbd> / <kbd>ESC</kbd> RESUME RUN</span>
+          </div>
+        </div>
       </div>
+
+      <!-- Right HUD Sidebar -->
       <aside class="hud">
-        <section class="hero-card"><div class="section-kicker">OPERATOR / 07</div><div class="hero-row"><div class="avatar">◈</div><div><h1>Vesper</h1><p id="buildName">ASH RUNNER</p></div><div class="level">LV <b id="level">01</b></div></div><div class="bar-label"><span>VITALITY</span><b id="healthText">100 / 100</b></div><div class="health-track"><i id="healthBar"></i></div><div class="stat-row"><span>ARMOR <b id="armor">12</b></span><span>CRIT <b id="crit">12%</b></span><span>DPS <b id="dps">0</b></span></div></section>
-        <section class="metrics"><div class="section-head"><span>RUN TELEMETRY</span><b id="timer">00:00</b></div><div class="metric-grid"><div><small>WAVE</small><strong id="wave">01 / ∞</strong></div><div><small>ELIMINATIONS</small><strong id="kills">000</strong></div><div><small>DAMAGE DEALT</small><strong id="damage">0000</strong></div><div><small>BEST HIT</small><strong id="bestHit">000</strong></div></div><div class="dash-row"><span>DASH CORE</span><div class="dash-track"><i id="dashBar"></i></div><b id="dashText">READY</b></div><div class="section-head boss-clock"><span>NEXT WARDEN</span><b id="bossTimer">05:00</b></div></section>
-        <section class="relics"><div class="section-head"><span>RELIC LOADOUT</span><b id="relicCount">00 / 06</b></div><div id="relicList" class="relic-list"></div></section>
-        <section class="generative"><div class="section-head"><span>GENERATIVE CORE</span><b id="patternCount">0 PATTERNS</b></div><div id="generatedList" class="generated-list"><div class="empty-state">Collecting combat telemetry...</div></div></section>
-        <section class="log"><div class="section-head"><span>COMBAT FEED</span><span class="signal">● SIGNAL</span></div><div id="combatLog"></div></section>
+        <section class="hero-card">
+          <div class="section-kicker">OPERATOR / 07</div>
+          <div class="hero-row">
+            <div class="avatar">◈</div>
+            <div>
+              <h1 id="operatorTitle">ptr734876</h1>
+              <p id="buildName">ASH RUNNER</p>
+            </div>
+            <div class="level">LV <b id="level">01</b></div>
+          </div>
+          <div class="bar-label"><span>VITALITY</span><b id="healthText">100 / 100</b></div>
+          <div class="health-track"><i id="healthBar"></i></div>
+          <div class="stat-row">
+            <span>ARMOR <b id="armor">6.0</b></span>
+            <span>CRIT <b id="crit">1%</b></span>
+            <span>DPS <b id="dps">0</b></span>
+          </div>
+        </section>
+
+        <section class="metrics">
+          <div class="section-head"><span>RUN TELEMETRY</span><b id="timer">00:00</b></div>
+          <div class="metric-grid">
+            <div><small>WAVE</small><strong id="wave">01 / ∞</strong></div>
+            <div><small>SCORE</small><strong id="score" style="color:var(--gold)">0.00 PTS</strong></div>
+            <div><small>ELIMINATIONS</small><strong id="kills">000</strong></div>
+            <div><small>DAMAGE DEALT</small><strong id="damage">0000</strong></div>
+            <div><small>BEST HIT</small><strong id="bestHit">000</strong></div>
+          </div>
+          <div class="dash-row">
+            <span>DASH CORE</span>
+            <div class="dash-track"><i id="dashBar"></i></div>
+            <b id="dashText">READY</b>
+          </div>
+        </section>
+
+        <section class="generative">
+          <div class="section-head"><span>GENERATIVE CORE</span><b id="patternCount">0 PATTERNS</b></div>
+          <div id="generatedList" class="generated-list">
+            <div class="empty-state">Collecting combat telemetry...</div>
+          </div>
+        </section>
+
+        <section class="log">
+          <div class="section-head"><span>COMBAT FEED</span><span class="signal">● SIGNAL</span></div>
+          <div id="combatLog"></div>
+        </section>
       </aside>
     </section>
   </main>
-  <div class="modal hidden" id="modal"><div class="modal-panel"><div class="section-kicker" id="modalKicker">WAVE CLEARED</div><h2 id="modalTitle">Choose your relic</h2><p id="modalCopy">One choice. Make it compound.</p><div class="choices" id="choices"></div><button class="primary-button hidden" id="restartButton">START NEW RUN <span>↗</span></button></div></div>
-  <div class="pause-screen hidden" id="pauseScreen"><div class="pause-panel"><div class="pause-head"><div><div class="section-kicker">ANALYSIS MODE / RUN FROZEN</div><h2>Telemetry Inspector</h2></div><button class="icon-button" id="resumeButton" title="Продолжить">×</button></div><div class="analysis-grid"><section><div class="analysis-title">LIVE BUILD</div><div id="pauseStats" class="pause-stats"></div><div class="formula"><small>EFFECTIVE DPS MODEL</small><b id="dpsFormula"></b><span id="formulaResult"></span></div></section><section><div class="analysis-title">GENERATED SKILL GRAPH</div><div class="analysis-note">EVIDENCE = наблюдения / первый порог. LV не уменьшается: стоимость LV растёт по ^0.74, сила баффа по ^0.72.</div><div id="skillGraph" class="skill-graph"></div><div class="sequence" id="sequenceView"></div></section></div><div class="pause-footer"><span>RUN IS FROZEN · NO DAMAGE TAKEN</span><span><kbd>P</kbd> / <kbd>ESC</kbd> RESUME</span></div></div></div>
-  <script type="module" src="game.js"></script>
+
+  <!-- Game Over Modal -->
+  <div class="modal hidden" id="modal">
+    <div class="modal-panel">
+      <div class="section-kicker" id="modalKicker">RUN TERMINATED</div>
+      <h2 id="modalTitle">Debriefing</h2>
+      <p id="modalCopy"></p>
+      <div class="choices" id="choices"></div>
+      <button class="primary-button" id="restartButton">START NEW RUN <span>↗</span></button>
+    </div>
+  </div>
+
+  <!-- Login Modal -->
+  <div class="modal hidden" id="loginModal">
+    <div class="modal-panel">
+      <div class="section-kicker">OPERATOR REGISTRATION</div>
+      <h2>Operator Login</h2>
+      <p>Enter your callsign to save PTS and rank on the global leaderboard.</p>
+      <form id="loginForm">
+        <input type="text" id="loginUsername" placeholder="Callsign (e.g. ptr734876)" class="auth-input" autocomplete="username" required>
+        <input type="password" id="loginPassword" placeholder="Passkey (optional)" class="auth-input" autocomplete="current-password">
+        <div class="auth-buttons">
+          <button type="submit" class="primary-button" id="submitLoginBtn">CONFIRM</button>
+          <button type="button" class="icon-button" id="closeLoginBtn" style="width:auto;padding:0 16px;">CANCEL</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="game.js?v=20260829_16"></script>
 </body>
 </html>

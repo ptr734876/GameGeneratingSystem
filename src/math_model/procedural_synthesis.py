@@ -95,10 +95,47 @@ class ProceduralSkillEngine:
     def _skill_id(self, pattern: tuple[str, ...], trigger: str) -> str:
         return "skill:" + trigger.lower().replace(" ", "-") + ":" + "+".join(pattern)
 
-    def _allocate(self, category: str, bonus: float) -> dict[str, float]:
+    ACTION_STAT_WEIGHTS = {
+        "move": {"move_speed_percent": 1.0, "stamina_cost_reduction_percent": 0.6, "dash_distance_percent": 0.25, "dash_cooldown_reduction_percent": 0.2},
+        "dash": {"dash_cooldown_reduction_percent": 1.0, "dash_distance_percent": 0.85, "move_speed_percent": 0.35, "stamina_cost_reduction_percent": 0.4},
+        "light_attack": {"attack_speed_percent": 1.0, "critical_chance_percent": 0.55, "attack_damage_percent": 0.45, "armor_penetration_percent": 0.2},
+        "heavy_attack": {"attack_damage_percent": 1.0, "armor_penetration_percent": 0.8, "critical_chance_percent": 0.35, "attack_speed_percent": 0.15},
+        "aim": {"critical_chance_percent": 1.0, "armor_penetration_percent": 0.7, "attack_damage_percent": 0.5, "attack_speed_percent": 0.3},
+        "ranged_attack": {"critical_chance_percent": 0.85, "attack_damage_percent": 0.65, "armor_penetration_percent": 0.55, "attack_speed_percent": 0.4},
+        "parry": {"parry_window_expansion_ms": 1.0, "counter_damage_multiplier_percent": 0.85, "damage_mitigation_percent": 0.5, "reflect_percent": 0.4},
+        "heavy_parry": {"damage_mitigation_percent": 0.9, "parry_window_expansion_ms": 0.8, "reflect_percent": 0.7, "counter_damage_multiplier_percent": 0.6},
+        "block": {"damage_mitigation_percent": 1.0, "reflect_percent": 0.75, "parry_window_expansion_ms": 0.3, "counter_damage_multiplier_percent": 0.3},
+        "heal": {"hp_recovery_percent": 1.0, "healing_cooldown_reduction_percent": 0.75, "life_steal_on_hit_percent": 0.3},
+        "potion": {"hp_recovery_percent": 1.0, "healing_cooldown_reduction_percent": 0.7, "life_steal_on_hit_percent": 0.2},
+    }
+
+    def _allocate(self, pattern: tuple[str, ...], category: str, bonus: float) -> dict[str, float]:
         allocation = {key: 0.0 for keys in self.STAT_RULES.values() for key in keys}
-        for key in self.STAT_RULES[category]:
-            allocation[key] = bonus * 100.0
+        allowed_stats = self.STAT_RULES[category]
+        weights: dict[str, float] = {key: 0.0 for key in allowed_stats}
+
+        for action in pattern:
+            action_map = self.ACTION_STAT_WEIGHTS.get(action, {})
+            for stat_name, w in action_map.items():
+                if stat_name in weights:
+                    weights[stat_name] = max(weights[stat_name], w)
+
+        if category == "hybrid":
+            if "dash" in pattern and any("attack" in a for a in pattern):
+                weights["dash_strike_damage_percent"] = 1.0
+                weights["invulnerability_frame_bonus_ms"] = 0.8
+            elif any(p in pattern for p in ("parry", "heavy_parry", "block")) and any("attack" in a for a in pattern):
+                weights["dash_strike_damage_percent"] = 0.6
+                weights["invulnerability_frame_bonus_ms"] = 1.0
+            else:
+                weights["dash_strike_damage_percent"] = 0.75
+                weights["invulnerability_frame_bonus_ms"] = 0.75
+
+        for stat_name in allowed_stats:
+            if weights[stat_name] <= 0.0:
+                weights[stat_name] = 0.5
+            allocation[stat_name] = bonus * 100.0 * weights[stat_name]
+
         return allocation
 
     def _ensure_skill(self, pattern: tuple[str, ...], low_hp: bool) -> SkillEntity:
@@ -157,7 +194,7 @@ class ProceduralSkillEngine:
         calculated = hill_soft_cap(normalized, 2.0, 0.35, 2.0, 0.35)
         skill.granted_bonus = ratchet_bonus(skill.granted_bonus, calculated)
         skill.soft_cap_active = normalized > 2.0
-        allocation = self._allocate(self._definition(skill.pattern, low_hp)[2], skill.granted_bonus)
+        allocation = self._allocate(skill.pattern, self._definition(skill.pattern, low_hp)[2], skill.granted_bonus)
         if skill.stats is None:
             skill.stats = {}
         for key, value in allocation.items():
@@ -176,7 +213,18 @@ class ProceduralSkillEngine:
 
     def stat_sheet(self) -> dict[str, float]:
         keys = {key for skill in self.skills.values() for key in skill.stat_types}
-        sheet = {key: min(35.0, sum((skill.stats or {}).get(key, 0.0) for skill in self.skills.values())) for key in keys}
+        sheet: dict[str, float] = {}
+        for key in keys:
+            contributions = sorted(
+                [skill.stats.get(key, 0.0) for skill in self.skills.values() if skill.stats and skill.stats.get(key, 0.0) > 0],
+                reverse=True,
+            )
+            if not contributions:
+                sheet[key] = 0.0
+                continue
+            total = sum(val / (1.0 + 0.5 * idx) for idx, val in enumerate(contributions))
+            sheet[key] = min(35.0, round(total, 2))
+
         # Compatibility aliases expose the old aggregate view without changing semantic allocation.
         sheet["damage_percent"] = sheet.get("attack_damage_percent", 0.0)
         sheet["speed_percent"] = sheet.get("move_speed_percent", 0.0)

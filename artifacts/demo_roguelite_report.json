@@ -1,22 +1,917 @@
 {
-  "mode": "Manual",
-  "frames": 120,
+  "mode": "Berserker",
+  "frames": 300,
   "wave": 1,
-  "actions": {},
-  "skill_graph": {
-    "nodes": [],
-    "edges": [],
-    "total_xp": 0.0,
-    "pattern_counts": {}
+  "kills": 0,
+  "actions": {
+    "12": 115,
+    "3": 166,
+    "2": 19
   },
-  "skills": {},
+  "skill_graph": {
+    "nodes": [
+      {
+        "skill_id": "skill:passive:light_attack",
+        "name": "Rising Edge",
+        "trigger": "Passive",
+        "pattern": [
+          "light_attack"
+        ],
+        "level": 3,
+        "xp": 56.160000000000245,
+        "next_threshold": 140.49280000000005,
+        "granted_bonus": 0.26001531719476584,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [],
+        "soft_cap_active": true,
+        "stat_types": [
+          "attack_damage_percent",
+          "critical_chance_percent",
+          "attack_speed_percent",
+          "armor_penetration_percent"
+        ],
+        "situational": false,
+        "combo_window_seconds": null,
+        "stats": {
+          "attack_damage_percent": 11.700689273764464,
+          "critical_chance_percent": 14.300842445712123,
+          "attack_speed_percent": 26.001531719476585,
+          "armor_penetration_percent": 5.200306343895317
+        }
+      },
+      {
+        "skill_id": "skill:passive:heavy_attack",
+        "name": "Bastion Force",
+        "trigger": "Passive",
+        "pattern": [
+          "heavy_attack"
+        ],
+        "level": 2,
+        "xp": 59.20000000000013,
+        "next_threshold": 125.44000000000001,
+        "granted_bonus": 0.2115298365041063,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [],
+        "soft_cap_active": true,
+        "stat_types": [
+          "attack_damage_percent",
+          "critical_chance_percent",
+          "attack_speed_percent",
+          "armor_penetration_percent"
+        ],
+        "situational": false,
+        "combo_window_seconds": null,
+        "stats": {
+          "attack_damage_percent": 21.152983650410633,
+          "critical_chance_percent": 7.403544277643721,
+          "attack_speed_percent": 3.172947547561595,
+          "armor_penetration_percent": 16.922386920328506
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:heavy_attack+light_attack",
+        "name": "Heavy_Attack Light_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "heavy_attack",
+          "light_attack"
+        ],
+        "level": 3,
+        "xp": 97.75999999999985,
+        "next_threshold": 140.49280000000005,
+        "granted_bonus": 0.2707212395459461,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack",
+          "skill:passive:heavy_attack"
+        ],
+        "soft_cap_active": true,
+        "stat_types": [
+          "attack_damage_percent",
+          "critical_chance_percent",
+          "attack_speed_percent",
+          "armor_penetration_percent"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "attack_damage_percent": 27.072123954594613,
+          "critical_chance_percent": 14.889668175027039,
+          "attack_speed_percent": 27.072123954594613,
+          "armor_penetration_percent": 21.65769916367569
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:light_attack+heavy_attack",
+        "name": "Light_Attack Heavy_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "light_attack",
+          "heavy_attack"
+        ],
+        "level": 3,
+        "xp": 56.959999999999866,
+        "next_threshold": 140.49280000000005,
+        "granted_bonus": 0.2602388820014263,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack",
+          "skill:passive:heavy_attack"
+        ],
+        "soft_cap_active": true,
+        "stat_types": [
+          "attack_damage_percent",
+          "critical_chance_percent",
+          "attack_speed_percent",
+          "armor_penetration_percent"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "attack_damage_percent": 26.02388820014263,
+          "critical_chance_percent": 14.313138510078447,
+          "attack_speed_percent": 26.02388820014263,
+          "armor_penetration_percent": 20.819110560114105
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:light_attack+dash",
+        "name": "Light_Attack Dash Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "light_attack",
+          "dash"
+        ],
+        "level": 0,
+        "xp": 88.39999999999998,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.057202157669128374,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 5.720215766912838,
+          "invulnerability_frame_bonus_ms": 4.576172613530271
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:dash+light_attack",
+        "name": "Phantom Thrust",
+        "trigger": "On Combo",
+        "pattern": [
+          "dash",
+          "light_attack"
+        ],
+        "level": 0,
+        "xp": 47.599999999999994,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.018762610680607656,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 1.8762610680607656,
+          "invulnerability_frame_bonus_ms": 1.5010088544486127
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:light_attack+dash+light_attack",
+        "name": "Light_Attack Dash Light_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "light_attack",
+          "dash",
+          "light_attack"
+        ],
+        "level": 0,
+        "xp": 39.0,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.012821222995592593,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack",
+          "skill:on-combo:light_attack+dash",
+          "skill:on-combo:dash+light_attack"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 1.2821222995592594,
+          "invulnerability_frame_bonus_ms": 1.0256978396474075
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:light_attack+heavy_attack+light_attack",
+        "name": "Light_Attack Heavy_Attack Light_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "light_attack",
+          "heavy_attack",
+          "light_attack"
+        ],
+        "level": 2,
+        "xp": 6.399999999999935,
+        "next_threshold": 125.44000000000001,
+        "granted_bonus": 0.17940736135605256,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack",
+          "skill:passive:heavy_attack",
+          "skill:on-combo:heavy_attack+light_attack",
+          "skill:on-combo:light_attack+heavy_attack"
+        ],
+        "soft_cap_active": true,
+        "stat_types": [
+          "attack_damage_percent",
+          "critical_chance_percent",
+          "attack_speed_percent",
+          "armor_penetration_percent"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "attack_damage_percent": 17.940736135605256,
+          "critical_chance_percent": 9.867404874582892,
+          "attack_speed_percent": 17.940736135605256,
+          "armor_penetration_percent": 14.352588908484206
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:heavy_attack+light_attack+heavy_attack",
+        "name": "Heavy_Attack Light_Attack Heavy_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "heavy_attack",
+          "light_attack",
+          "heavy_attack"
+        ],
+        "level": 1,
+        "xp": 79.39999999999996,
+        "next_threshold": 112.00000000000001,
+        "granted_bonus": 0.14770063250806698,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack",
+          "skill:passive:heavy_attack",
+          "skill:on-combo:heavy_attack+light_attack",
+          "skill:on-combo:light_attack+heavy_attack"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "attack_damage_percent",
+          "critical_chance_percent",
+          "attack_speed_percent",
+          "armor_penetration_percent"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "attack_damage_percent": 14.770063250806697,
+          "critical_chance_percent": 8.123534787943683,
+          "attack_speed_percent": 14.770063250806697,
+          "armor_penetration_percent": 11.816050600645358
+        }
+      },
+      {
+        "skill_id": "skill:passive:dash",
+        "name": "Slipstream Step",
+        "trigger": "Passive",
+        "pattern": [
+          "dash"
+        ],
+        "level": 0,
+        "xp": 40.79999999999999,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.013983656165035864,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [],
+        "soft_cap_active": false,
+        "stat_types": [
+          "move_speed_percent",
+          "dash_cooldown_reduction_percent",
+          "dash_distance_percent",
+          "stamina_cost_reduction_percent"
+        ],
+        "situational": false,
+        "combo_window_seconds": null,
+        "stats": {
+          "move_speed_percent": 0.48942796577625525,
+          "dash_cooldown_reduction_percent": 1.3983656165035865,
+          "dash_distance_percent": 1.1886107740280485,
+          "stamina_cost_reduction_percent": 0.5593462466014346
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:dash+heavy_attack",
+        "name": "Dash Heavy_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "dash",
+          "heavy_attack"
+        ],
+        "level": 0,
+        "xp": 54.39999999999999,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.024110601275251765,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:heavy_attack",
+          "skill:passive:dash"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 2.4110601275251766,
+          "invulnerability_frame_bonus_ms": 1.9288481020201413
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:light_attack+dash+heavy_attack",
+        "name": "Light_Attack Dash Heavy_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "light_attack",
+          "dash",
+          "heavy_attack"
+        ],
+        "level": 0,
+        "xp": 39.0,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.012821222995592593,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack",
+          "skill:passive:heavy_attack",
+          "skill:on-combo:heavy_attack+light_attack",
+          "skill:on-combo:light_attack+heavy_attack",
+          "skill:on-combo:light_attack+dash",
+          "skill:on-combo:dash+light_attack",
+          "skill:passive:dash",
+          "skill:on-combo:dash+heavy_attack"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 1.2821222995592594,
+          "invulnerability_frame_bonus_ms": 1.0256978396474075
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:dash+heavy_attack+light_attack",
+        "name": "Dash Heavy_Attack Light_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "dash",
+          "heavy_attack",
+          "light_attack"
+        ],
+        "level": 0,
+        "xp": 31.2,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.008315240311772701,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack",
+          "skill:passive:heavy_attack",
+          "skill:on-combo:heavy_attack+light_attack",
+          "skill:on-combo:light_attack+heavy_attack",
+          "skill:on-combo:light_attack+dash",
+          "skill:on-combo:dash+light_attack",
+          "skill:passive:dash",
+          "skill:on-combo:dash+heavy_attack"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 0.8315240311772701,
+          "invulnerability_frame_bonus_ms": 0.6652192249418162
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:heavy_attack+light_attack+dash",
+        "name": "Heavy_Attack Light_Attack Dash Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "heavy_attack",
+          "light_attack",
+          "dash"
+        ],
+        "level": 0,
+        "xp": 15.6,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.0021165230736200956,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack",
+          "skill:passive:heavy_attack",
+          "skill:on-combo:heavy_attack+light_attack",
+          "skill:on-combo:light_attack+heavy_attack",
+          "skill:on-combo:light_attack+dash",
+          "skill:on-combo:dash+light_attack",
+          "skill:passive:dash",
+          "skill:on-combo:dash+heavy_attack"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 0.21165230736200957,
+          "invulnerability_frame_bonus_ms": 0.16932184588960766
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:heavy_attack+dash",
+        "name": "Heavy_Attack Dash Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "heavy_attack",
+          "dash"
+        ],
+        "level": 0,
+        "xp": 13.6,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.0016109509627482523,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:heavy_attack",
+          "skill:passive:dash"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 0.16109509627482524,
+          "invulnerability_frame_bonus_ms": 0.1288760770198602
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:dash+light_attack+heavy_attack",
+        "name": "Dash Light_Attack Heavy_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "dash",
+          "light_attack",
+          "heavy_attack"
+        ],
+        "level": 0,
+        "xp": 7.8,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.0005315415253399579,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:light_attack",
+          "skill:passive:heavy_attack",
+          "skill:on-combo:heavy_attack+light_attack",
+          "skill:on-combo:light_attack+heavy_attack",
+          "skill:on-combo:light_attack+dash",
+          "skill:on-combo:dash+light_attack",
+          "skill:passive:dash",
+          "skill:on-combo:dash+heavy_attack",
+          "skill:on-combo:heavy_attack+dash"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 0.05315415253399579,
+          "invulnerability_frame_bonus_ms": 0.042523322027196636
+        }
+      },
+      {
+        "skill_id": "skill:on-combo:heavy_attack+dash+heavy_attack",
+        "name": "Heavy_Attack Dash Heavy_Attack Mastery",
+        "trigger": "On Combo",
+        "pattern": [
+          "heavy_attack",
+          "dash",
+          "heavy_attack"
+        ],
+        "level": 0,
+        "xp": 7.8,
+        "next_threshold": 100.0,
+        "granted_bonus": 0.0005315415253399579,
+        "damage_percent": 0.0,
+        "cooldown_reduction_percent": 0.0,
+        "speed_percent": 0.0,
+        "lifesteal_percent": 0.0,
+        "parents": [
+          "skill:passive:heavy_attack",
+          "skill:passive:dash",
+          "skill:on-combo:dash+heavy_attack",
+          "skill:on-combo:heavy_attack+dash"
+        ],
+        "soft_cap_active": false,
+        "stat_types": [
+          "dash_strike_damage_percent",
+          "invulnerability_frame_bonus_ms"
+        ],
+        "situational": true,
+        "combo_window_seconds": 1.2,
+        "stats": {
+          "dash_strike_damage_percent": 0.05315415253399579,
+          "invulnerability_frame_bonus_ms": 0.042523322027196636
+        }
+      }
+    ],
+    "edges": [
+      [
+        "skill:on-combo:dash+heavy_attack",
+        "skill:on-combo:dash+heavy_attack+light_attack"
+      ],
+      [
+        "skill:on-combo:dash+heavy_attack",
+        "skill:on-combo:dash+light_attack+heavy_attack"
+      ],
+      [
+        "skill:on-combo:dash+heavy_attack",
+        "skill:on-combo:heavy_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:on-combo:dash+heavy_attack",
+        "skill:on-combo:heavy_attack+light_attack+dash"
+      ],
+      [
+        "skill:on-combo:dash+heavy_attack",
+        "skill:on-combo:light_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:on-combo:dash+light_attack",
+        "skill:on-combo:dash+heavy_attack+light_attack"
+      ],
+      [
+        "skill:on-combo:dash+light_attack",
+        "skill:on-combo:dash+light_attack+heavy_attack"
+      ],
+      [
+        "skill:on-combo:dash+light_attack",
+        "skill:on-combo:heavy_attack+light_attack+dash"
+      ],
+      [
+        "skill:on-combo:dash+light_attack",
+        "skill:on-combo:light_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:on-combo:dash+light_attack",
+        "skill:on-combo:light_attack+dash+light_attack"
+      ],
+      [
+        "skill:on-combo:heavy_attack+dash",
+        "skill:on-combo:dash+light_attack+heavy_attack"
+      ],
+      [
+        "skill:on-combo:heavy_attack+dash",
+        "skill:on-combo:heavy_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:on-combo:heavy_attack+light_attack",
+        "skill:on-combo:dash+heavy_attack+light_attack"
+      ],
+      [
+        "skill:on-combo:heavy_attack+light_attack",
+        "skill:on-combo:dash+light_attack+heavy_attack"
+      ],
+      [
+        "skill:on-combo:heavy_attack+light_attack",
+        "skill:on-combo:heavy_attack+light_attack+dash"
+      ],
+      [
+        "skill:on-combo:heavy_attack+light_attack",
+        "skill:on-combo:heavy_attack+light_attack+heavy_attack"
+      ],
+      [
+        "skill:on-combo:heavy_attack+light_attack",
+        "skill:on-combo:light_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:on-combo:heavy_attack+light_attack",
+        "skill:on-combo:light_attack+heavy_attack+light_attack"
+      ],
+      [
+        "skill:on-combo:light_attack+dash",
+        "skill:on-combo:dash+heavy_attack+light_attack"
+      ],
+      [
+        "skill:on-combo:light_attack+dash",
+        "skill:on-combo:dash+light_attack+heavy_attack"
+      ],
+      [
+        "skill:on-combo:light_attack+dash",
+        "skill:on-combo:heavy_attack+light_attack+dash"
+      ],
+      [
+        "skill:on-combo:light_attack+dash",
+        "skill:on-combo:light_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:on-combo:light_attack+dash",
+        "skill:on-combo:light_attack+dash+light_attack"
+      ],
+      [
+        "skill:on-combo:light_attack+heavy_attack",
+        "skill:on-combo:dash+heavy_attack+light_attack"
+      ],
+      [
+        "skill:on-combo:light_attack+heavy_attack",
+        "skill:on-combo:dash+light_attack+heavy_attack"
+      ],
+      [
+        "skill:on-combo:light_attack+heavy_attack",
+        "skill:on-combo:heavy_attack+light_attack+dash"
+      ],
+      [
+        "skill:on-combo:light_attack+heavy_attack",
+        "skill:on-combo:heavy_attack+light_attack+heavy_attack"
+      ],
+      [
+        "skill:on-combo:light_attack+heavy_attack",
+        "skill:on-combo:light_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:on-combo:light_attack+heavy_attack",
+        "skill:on-combo:light_attack+heavy_attack+light_attack"
+      ],
+      [
+        "skill:passive:dash",
+        "skill:on-combo:dash+heavy_attack"
+      ],
+      [
+        "skill:passive:dash",
+        "skill:on-combo:dash+heavy_attack+light_attack"
+      ],
+      [
+        "skill:passive:dash",
+        "skill:on-combo:dash+light_attack+heavy_attack"
+      ],
+      [
+        "skill:passive:dash",
+        "skill:on-combo:heavy_attack+dash"
+      ],
+      [
+        "skill:passive:dash",
+        "skill:on-combo:heavy_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:passive:dash",
+        "skill:on-combo:heavy_attack+light_attack+dash"
+      ],
+      [
+        "skill:passive:dash",
+        "skill:on-combo:light_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:dash+heavy_attack"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:dash+heavy_attack+light_attack"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:dash+light_attack+heavy_attack"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:heavy_attack+dash"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:heavy_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:heavy_attack+light_attack"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:heavy_attack+light_attack+dash"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:heavy_attack+light_attack+heavy_attack"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:light_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:light_attack+heavy_attack"
+      ],
+      [
+        "skill:passive:heavy_attack",
+        "skill:on-combo:light_attack+heavy_attack+light_attack"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:dash+heavy_attack+light_attack"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:dash+light_attack"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:dash+light_attack+heavy_attack"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:heavy_attack+light_attack"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:heavy_attack+light_attack+dash"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:heavy_attack+light_attack+heavy_attack"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:light_attack+dash"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:light_attack+dash+heavy_attack"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:light_attack+dash+light_attack"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:light_attack+heavy_attack"
+      ],
+      [
+        "skill:passive:light_attack",
+        "skill:on-combo:light_attack+heavy_attack+light_attack"
+      ]
+    ],
+    "total_xp": 2277.4000000000087,
+    "pattern_counts": {
+      "heavy_attack": 115,
+      "light_attack": 166,
+      "heavy_attack -> light_attack": 65,
+      "light_attack -> heavy_attack": 59,
+      "light_attack -> heavy_attack -> light_attack": 29,
+      "heavy_attack -> light_attack -> heavy_attack": 24,
+      "dash": 19,
+      "light_attack -> dash": 14,
+      "dash -> light_attack": 8,
+      "light_attack -> dash -> light_attack": 6,
+      "heavy_attack -> light_attack -> dash": 3,
+      "dash -> light_attack -> heavy_attack": 2,
+      "dash -> heavy_attack": 9,
+      "light_attack -> dash -> heavy_attack": 6,
+      "dash -> light_attack -> dash": 1,
+      "dash -> heavy_attack -> light_attack": 5,
+      "heavy_attack -> dash": 3,
+      "heavy_attack -> dash -> light_attack": 1,
+      "dash -> heavy_attack -> dash": 1,
+      "heavy_attack -> dash -> heavy_attack": 2
+    }
+  },
+  "skills": {
+    "Rising Edge": 0.26001531719476584,
+    "Bastion Force": 0.2115298365041063,
+    "Heavy_Attack Light_Attack Mastery": 0.2707212395459461,
+    "Light_Attack Heavy_Attack Mastery": 0.2602388820014263,
+    "Light_Attack Dash Mastery": 0.057202157669128374,
+    "Phantom Thrust": 0.018762610680607656,
+    "Light_Attack Dash Light_Attack Mastery": 0.012821222995592593,
+    "Light_Attack Heavy_Attack Light_Attack Mastery": 0.17940736135605256,
+    "Heavy_Attack Light_Attack Heavy_Attack Mastery": 0.14770063250806698,
+    "Slipstream Step": 0.013983656165035864,
+    "Dash Heavy_Attack Mastery": 0.024110601275251765,
+    "Light_Attack Dash Heavy_Attack Mastery": 0.012821222995592593,
+    "Dash Heavy_Attack Light_Attack Mastery": 0.008315240311772701,
+    "Heavy_Attack Light_Attack Dash Mastery": 0.0021165230736200956,
+    "Heavy_Attack Dash Mastery": 0.0016109509627482523,
+    "Dash Light_Attack Heavy_Attack Mastery": 0.0005315415253399579,
+    "Heavy_Attack Dash Heavy_Attack Mastery": 0.0005315415253399579
+  },
   "stat_sheet": {
-    "damage_percent": 0.0,
-    "speed_percent": 0.0,
-    "cooldown_reduction_percent": 0.0,
+    "dash_cooldown_reduction_percent": 1.4,
+    "dash_distance_percent": 1.19,
+    "armor_penetration_percent": 35.0,
+    "move_speed_percent": 0.49,
+    "dash_strike_damage_percent": 9.55,
+    "stamina_cost_reduction_percent": 0.56,
+    "attack_damage_percent": 35.0,
+    "critical_chance_percent": 35.0,
+    "invulnerability_frame_bonus_ms": 7.64,
+    "attack_speed_percent": 35.0,
+    "damage_percent": 35.0,
+    "speed_percent": 0.49,
+    "cooldown_reduction_percent": 1.4,
     "lifesteal_percent": 0.0
   },
-  "telemetry": [],
+  "telemetry": [
+    "Heavy Strike   -> z +0.11 + combo -> +10.0%",
+    "Light Strike   -> z +0.11 + combo -> +10.0%",
+    "Light Strike   -> z +0.11 + combo -> +10.0%",
+    "Light Strike   -> z +0.10 + combo -> +10.0%",
+    "Heavy Strike   -> z +0.10 -> +10.0%",
+    "Heavy Strike   -> z +0.11 + combo -> +10.0%",
+    "Light Strike   -> z +0.11 -> +10.0%",
+    "Heavy Strike   -> z +0.11 -> +10.0%"
+  ],
   "saturation": [
     {
       "x": 0.0,
