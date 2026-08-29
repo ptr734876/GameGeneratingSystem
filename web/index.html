@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260829_21">
+  <link rel="stylesheet" href="styles.css?v=20260829_22">
 </head>
 <body>
   <main class="shell">
@@ -21,11 +21,11 @@
         <span id="activeUser">OPERATOR: ptr734876</span><span class="telemetry-badge" title="Сбор размеченных данных сессии активен"><span class="rec-dot"></span>DATA REC</span>
         <button class="small-btn" id="loginModalBtn">SWITCH CALLSIGN</button>
       </div>
-      <div class="style-meter-badge rank-D" id="styleMeterBadge" title="Ранг стиля (D → SSS) увеличивает PTS множитель до x4.0!">
-          <span id="styleRankText">STYLE: D</span>
-          <small id="styleMultText">x1.0</small>
-        </div>
-        <div class="run-meta">
+      <div class="deck-top-badge" id="deckTopBadge" title="Активный билд оператора (макс 18 слотов, несъемные)">
+        <span>DECK:</span>
+        <b id="deckTopCount" style="color:var(--mint);">0 / 18</b>
+      </div>
+      <div class="run-meta">
         <span id="phaseLabel">WAVE 01</span>
         <span class="live-dot"></span>
         <span id="statusLabel">LIVE RUN</span>
@@ -36,7 +36,7 @@
         </button>
       </div>
       <div class="top-actions">
-        <button class="icon-button" id="infoModalBtn" title="Справка, управление и генератор (I)">ℹ️</button>
+        <button class="icon-button" id="infoModalBtn" title="Справка, механики, управление и генератор (I)">ℹ️</button>
         <button class="icon-button" id="audioToggleBtn" title="Звук и музыка (M)">🔊</button>
         <button class="icon-button" id="pauseButton" title="Пауза и анализ (P / Esc)">Ⅱ</button>
         <button class="icon-button" id="newRunButton" title="Начать новый забег">↻</button>
@@ -79,7 +79,7 @@
           <div class="boss-name">WARDEN // ENRAGED</div>
           <div class="meter"><i id="bossHealth"></i></div>
         </div>
-        <div class="controls"><kbd>WASD</kbd> MOVE <kbd>SPACE</kbd> DASH <span>AUTO-AIM ENGAGED</span></div>
+        <div class="controls"><kbd>WASD</kbd> MOVE <kbd>SPACE</kbd> DASH (50% REFLECT) <kbd>HOLD LMB</kbd> CHARGE <span>AUTO-AIM ENGAGED</span></div>
 
         <!-- In-Arena Pause Screen Overlay -->
         <div class="pause-screen hidden" id="pauseScreen">
@@ -102,13 +102,13 @@
             </section>
             <section>
               <div class="analysis-title">GENERATED SKILL GRAPH</div>
-              <div class="analysis-note">Dota 2 крит-стакинг · Асимметричный рост баффов (LV^0.70) над дебаффами (LV^0.45).</div>
+              <div class="analysis-note">Несъемные слоты билда (макс. 18). Прокачиваются только экипированные навыки.</div>
               <div id="skillGraph" class="skill-graph"></div>
               <div class="sequence" id="sequenceView"></div>
             </section>
           </div>
           <div class="pause-footer">
-            <span>RUN IS FROZEN · HUD AND LEADERBOARD ACTIVE</span>
+            <span>RUN IS FROZEN · HUD AND DECK ACTIVE</span>
             <span><kbd>P</kbd> / <kbd>ESC</kbd> RESUME RUN</span>
           </div>
         </div>
@@ -152,7 +152,7 @@
         </section>
 
         <section class="generative">
-          <div class="section-head"><span>GENERATIVE CORE</span><b id="patternCount">0 PATTERNS</b></div>
+          <div class="section-head"><span>ACTIVE DECK</span><b id="patternCount">0 / 18 SLOTS</b></div>
           <div id="generatedList" class="generated-list">
             <div class="empty-state">Collecting combat telemetry...</div>
           </div>
@@ -163,6 +163,69 @@
           <div id="combatLog"></div>
         </section>
       </aside>
+    </section>
+
+    <!-- Dedicated Full-Width Bottom Skills & Deck Synthesis Dashboard -->
+    <section class="deck-dashboard-section">
+      <div class="deck-dashboard-panel">
+        <div class="deck-dash-header">
+          <div class="deck-title-group">
+            <span class="gold-badge">🧬 SYNTHESIS DECK LAB</span>
+            <h3>BUILD DECK [<span id="activeDeckCount">0</span> / 18 SLOTS LOCKED]</h3>
+            <small>Несъемные навыки. Уровень (LV 1 → LV 10) растет только у экипированных пассивок.</small>
+          </div>
+          
+          <!-- Search & Dual Filter Controls (Buff & Debuff) -->
+          <div class="deck-filters-bar">
+            <div class="filter-search-box">
+              <input type="text" id="deckSearchInput" placeholder="🔍 Поиск по хешу, тегу, стату..." class="deck-search-input">
+            </div>
+            <div class="filter-select-group">
+              <label>БАФФ:</label>
+              <select id="filterBuffSelect" class="deck-filter-select">
+                <option value="ALL">ВСЕ БАФФЫ</option>
+                <option value="SPD">⚡ Скорость (SPD)</option>
+                <option value="DMG">💥 Урон (DMG)</option>
+                <option value="CRT">🎯 Крит (CRT)</option>
+                <option value="ARM">🛡️ Броня (ARM)</option>
+                <option value="HP+">❤️ Здоровье (HP+)</option>
+                <option value="RNG">🏹 Радиус (RNG)</option>
+                <option value="DSH">💨 Дист. рывка (DSH)</option>
+                <option value="DCD">⏱️ КД рывка (DCD)</option>
+                <option value="ATK">🔫 Темп огня (ATK)</option>
+                <option value="HEL">🩸 Лечение (HEL)</option>
+              </select>
+            </div>
+            <div class="filter-select-group">
+              <label>ДЕБАФФ:</label>
+              <select id="filterDebuffSelect" class="deck-filter-select">
+                <option value="ALL">ВСЕ ДЕБАФФЫ</option>
+                <option value="CLR">✨ Без штрафов (CLR)</option>
+                <option value="ARM">🛡️ Броня (ARM)</option>
+                <option value="RNG">🏹 Сектор (RNG)</option>
+                <option value="SPD">⚡ Скорость (SPD)</option>
+                <option value="DMG">💥 Урон (DMG)</option>
+                <option value="DSH">💨 Дист. рывка (DSH)</option>
+                <option value="DCD">⏱️ КД рывка (DCD)</option>
+                <option value="ATK">🔫 Темп огня (ATK)</option>
+                <option value="HEL">🩸 Лечение (HEL)</option>
+                <option value="HP+">❤️ Здоровье (HP+)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Two Tabs: Active Build vs Discovered Proposals -->
+        <div class="deck-tabs-bar">
+          <button class="deck-tab active" id="tabActiveDeck">АКТИВНЫЙ БИЛД (<span id="tabActiveDeckNum">0</span>/18)</button>
+          <button class="deck-tab" id="tabProposals">ПРЕДЛОЖЕНИЯ ИИ (<span id="tabProposalsNum">0</span> ДОСТУПНО)</button>
+        </div>
+
+        <!-- Deck Grid Container -->
+        <div id="deckGrid" class="deck-grid">
+          <div class="empty-state">Синтез навыков не начат. Совершайте маневры, рывки, парирования и выстрелы для кристаллизации пассивок.</div>
+        </div>
+      </div>
     </section>
   </main>
 
@@ -190,10 +253,12 @@
       
       <div class="info-content-scroll">
         <div class="info-section">
-          <h4>🎮 УПРАВЛЕНИЕ (CONTROLS)</h4>
+          <h4>🎮 УПРАВЛЕНИЕ И МЕХАНИКИ МАСТЕРСТВА (CONTROLS)</h4>
           <div class="info-grid">
             <div><code>W A S D</code> / <code>Стрелки</code></div><div>Перемещение оператора</div>
-            <div><code>ПРОБЕЛ</code></div><div>Рывок (Dash) с 100% неуязвимостью (i-frames)</div>
+            <div><code>ПРОБЕЛ</code></div><div>Рывок (Dash) со 100% неуязвимостью + <b>50% шанс отражения пуль</b></div>
+            <div><code>КЛИК ЛКМ</code></div><div>Точный ручной выстрел в направлении курсора</div>
+            <div><code>ЗАЖАТИЕ ЛКМ</code></div><div><b>Бесконечная зарядка выстрела</b> (рост урона до x10.0+ с плавным замедлением)</div>
             <div><code>АВТООГОНЬ</code></div><div>Автоматический огонь по целям в секторе</div>
             <div><code>P</code> / <code>ESC</code></div><div>Пауза и аналитический разбор билда</div>
             <div><code>M</code></div><div>Включение / выключение звука и музыки</div>
@@ -202,39 +267,34 @@
         </div>
 
         <div class="info-section">
-          <h4>🧬 КАК РАБОТАЕТ ГЕНЕРАЦИЯ НАВЫКОВ</h4>
-          <p>Движок непрерывно анализирует ваши реальные действия, маневры и тактическое позиционирование в бою:</p>
+          <h4>🛡️ НЕСЪЕМНЫЙ БИЛД И ПРОКАЧКА УРОВНЕЙ</h4>
+          <p>В этом забеге вы собираете постоянный билд из максимум <b>18 слотов</b>:</p>
           <ul>
-            <li><b>Позиционирование:</b> Стрельба в упор (<code>PNT</code>) усиливает урон, снайперский огонь с дистанции (<code>SNI</code>) развивает криты и сектор обзора.</li>
-            <li><b>Маневренность:</b> Активные рывки (<code>DSH</code>) и уклонения на грани смерти (<code>EVN</code>) разгоняют скорость и маневренность.</li>
-            <li><b>Тактический баланс:</b> Каждая способность имеет соразмерный штраф (дебафф), отражающий цену боевого стиля.</li>
-            <li><b>Комбо до 4 шагов:</b> Цепочки осознанных действий за 1.8 сек открывают редкие пассивки высших рангов (Tier 1 → Tier 4).</li>
-            <li><b>Контекстные аффиксы:</b> <code>[ADR]</code> (Адреналин при &lt;40% HP), <code>[OVR]</code> (Овердрайв без урона), <code>[SLY]</code> (Схватка с боссом).</li>
+            <li><b>Несъемный выбор:</b> Если вы нажимаете <code>[ + ACCEPT & LOCK IN ]</code>, способность навсегда закрепляется в активном билде текущего забега.</li>
+            <li><b>Прокачка только экипированных:</b> Уровень (LV 1 → LV 10) и прогресс растут <b>исключительно у экипированных навыков</b> по мере продолжения боя в этом стиле. Неэкипированные предложения остаются на LV 1.</li>
+            <li><b>Лимит 18 слотов:</b> Заполнив 18 слотов, вы фиксируете финальную колоду оператора.</li>
+            <li><b>Двойная фильтрация:</b> В панели под игрой можно фильтровать способности одновременно по баффу, дебаффу и текстовому поиску.</li>
           </ul>
         </div>
 
         <div class="info-section">
-          <h4>🌌 ВАРИАЦИИ И ЕМКОСТЬ СИСТЕМЫ</h4>
-          <div class="stat-highlight-box">
-            <div class="stat-h-item">
-              <b>18</b>
-              <small>МАКС. ПАССИВОК В БИЛДЕ</small>
-            </div>
-            <div class="stat-h-item">
-              <b>88,740</b>
-              <small>ТАКТИЧЕСКИХ ЦЕПОЧЕК</small>
-            </div>
-            <div class="stat-h-item">
-              <b>> 1.17 МЛРД</b>
-              <small>ПРОЦЕДУРНЫХ ВАРИАЦИЙ</small>
-            </div>
+          <h4>🏆 КЛАССЫ СТИЛЯ (STYLE CLASSES: D → SSS)</h4>
+          <p>Каждому навыку присвоен класс стиля, отражающий его редкость, глубину комбо и силу:</p>
+          <div class="style-class-legend">
+            <span class="sclass-tag sc-D"><b>Class D:</b> Базовые одиночные маневры (Move)</span>
+            <span class="sclass-tag sc-C"><b>Class C:</b> Тактическое позиционирование (Sniper, Point-Blank, Dash)</span>
+            <span class="sclass-tag sc-B"><b>Class B:</b> 2-шаговые тактические комбо (Move→Dash, Charge)</span>
+            <span class="sclass-tag sc-A"><b>Class A:</b> Редкие хай-скилл действия и парирование (Parry, Boss, Crit→Kill)</span>
+            <span class="sclass-tag sc-S"><b>Class S:</b> Рипосты, снайперские рывки и выстрелы с выката</span>
+            <span class="sclass-tag sc-SS"><b>Class SS:</b> 3-шаговые мастер-комбо (Dash→PointBlank→Kill)</span>
+            <span class="sclass-tag sc-SSS"><b>Class SSS:</b> 4-шаговые ультимативные цепочки казни</span>
           </div>
         </div>
 
         <div class="info-section">
           <h4>🏷️ РАСШИФРОВКА ТРЕЙТ-ХЕША СПОСОБНОСТИ</h4>
           <p style="font-family:'Space Mono',monospace;color:var(--mint);font-size:12px;background:#0d1c1a;padding:6px;border:1px solid #24443c;margin-bottom:6px;">
-            #[ДЕЙСТВИЕ] [БАФФ]:[ДЕБАФФ]-[ТИР]·L[УРОВЕНЬ] [АФФИКС]
+            #[ДЕЙСТВИЕ] [БАФФ]:[ДЕБАФФ]-[КЛАСС_СТИЛЯ]·L[УРОВЕНЬ] [АФФИКС]
           </p>
           <div class="info-tags-legend">
             <span><b>MOV</b>=Движение</span>
@@ -242,6 +302,8 @@
             <span><b>SNI</b>=Снайпер</span>
             <span><b>PNT</b>=В упор</span>
             <span><b>EVN</b>=Уклонение</span>
+            <span><b>PAR</b>=Парирование</span>
+            <span><b>CHG</b>=Зарядка</span>
             <span><b>CRT</b>=Крит</span>
             <span><b>KIL</b>=Убийство</span>
             <span><b>DMG</b>=Урон</span>
@@ -273,6 +335,6 @@
     </div>
   </div>
 
-  <script type="module" src="game.js?v=20260829_21"></script>
+  <script type="module" src="game.js?v=20260829_22"></script>
 </body>
 </html>

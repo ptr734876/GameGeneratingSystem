@@ -855,3 +855,207 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .generated.is-equipped {
   border-left: 2px solid var(--mint);
 }
+
+
+/* Topbar Deck Badge */
+.deck-top-badge {
+  font: 700 12px 'Space Mono', monospace;
+  padding: 4px 10px;
+  background: #0f1d1b;
+  border: 1px solid var(--line-gold);
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Dedicated Bottom Deck Dashboard Section */
+.deck-dashboard-section {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.deck-dashboard-panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.deck-dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.deck-title-group h3 {
+  font: 800 16px 'Space Mono', monospace;
+  color: var(--mint);
+  margin-top: 2px;
+  letter-spacing: .5px;
+}
+
+.deck-title-group small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Filters Bar */
+.deck-filters-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.deck-search-input {
+  background: #0d1a19;
+  border: 1px solid var(--line);
+  color: var(--text);
+  font: 12px 'Space Mono', monospace;
+  padding: 6px 10px;
+  width: 220px;
+  outline: none;
+}
+.deck-search-input:focus {
+  border-color: var(--mint);
+}
+
+.filter-select-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 11px 'Space Mono', monospace;
+  color: var(--muted);
+}
+
+.deck-filter-select {
+  background: #0d1a19;
+  border: 1px solid var(--line);
+  color: var(--mint);
+  font: 700 11px 'Space Mono', monospace;
+  padding: 6px 8px;
+  outline: none;
+  cursor: pointer;
+}
+.deck-filter-select:focus {
+  border-color: var(--gold);
+}
+
+/* Tabs Bar */
+.deck-tabs-bar {
+  display: flex;
+  gap: 8px;
+}
+
+.deck-tab {
+  background: #101c1a;
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font: 700 12px 'Space Mono', monospace;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+.deck-tab:hover {
+  background: #172d29;
+  color: var(--text);
+}
+.deck-tab.active {
+  background: #15332c;
+  border-color: var(--mint);
+  color: var(--mint);
+}
+
+/* Deck Cards Grid */
+.deck-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 12px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.deck-card {
+  background: #0d1a19;
+  border: 1px solid var(--line);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  transition: transform .1s ease, border-color .15s ease;
+}
+.deck-card:hover {
+  border-color: var(--line-gold);
+}
+.deck-card.locked-in {
+  border-left: 3px solid var(--mint);
+  background: #0e201d;
+}
+.deck-card.proposed {
+  border-left: 3px solid var(--gold);
+}
+
+.deck-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.style-class-tag {
+  font: 800 10px 'Space Mono', monospace;
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+.sc-D { background: #222; color: #888; border: 1px solid #444; }
+.sc-C { background: #102a32; color: #72c8e3; border: 1px solid #1c4b57; }
+.sc-B { background: #102d24; color: #86e0b1; border: 1px solid #235546; }
+.sc-A { background: #322b10; color: #f4bd62; border: 1px solid #574b1e; }
+.sc-S { background: #3c2410; color: #ff9f43; border: 1px solid #6b411d; }
+.sc-SS { background: #3c1414; color: #ee5253; border: 1px solid #732323; }
+.sc-SSS { background: #5c1414; color: #fff; border: 1px solid #ff3838; box-shadow: 0 0 8px rgba(255,56,56,.5); }
+
+.deck-lock-btn {
+  font: 700 10px 'Space Mono', monospace;
+  padding: 4px 10px;
+  background: var(--gold);
+  color: #081014;
+  border: none;
+  cursor: pointer;
+  font-weight: 800;
+  transition: all .15s ease;
+}
+.deck-lock-btn:hover {
+  background: #ffd079;
+}
+.deck-lock-btn.locked {
+  background: #112b25;
+  color: var(--mint);
+  border: 1px solid var(--mint);
+  cursor: default;
+}
+.deck-lock-btn.deck-full {
+  background: #222;
+  color: #666;
+  cursor: not-allowed;
+}
+
+.style-class-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 6px;
+}
+.sclass-tag {
+  font: 11px 'Space Mono', monospace;
+  padding: 4px 8px;
+  display: block;
+}

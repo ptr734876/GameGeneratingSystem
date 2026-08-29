@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_21';
-import { SoundEngine } from './audio.js?v=20260829_21';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_22';
+import { SoundEngine } from './audio.js?v=20260829_22';
 
 function getOrCreateGuestUsername() {
   let stored = localStorage.getItem('skillgen_username');
@@ -24,20 +24,14 @@ export const mitigatedDamage = (rawDamage, armor) => rawDamage * (100 / (100 + M
 const generator = new GenerativeSkillEngine();
 const audio = new SoundEngine();
 
-const STYLE_RANKS = [
-  { rank: 'D', min: 0, mult: 1.0, class: 'rank-D' },
-  { rank: 'C', min: 16, mult: 1.2, class: 'rank-C' },
-  { rank: 'B', min: 36, mult: 1.5, class: 'rank-B' },
-  { rank: 'A', min: 61, mult: 2.0, class: 'rank-A' },
-  { rank: 'S', min: 91, mult: 2.5, class: 'rank-S' },
-  { rank: 'SS', min: 131, mult: 3.2, class: 'rank-SS' },
-  { rank: 'SSS', min: 181, mult: 4.0, class: 'rank-SSS' }
-];
-
 const state = {
   mode: 'playing',
   gameMode: localStorage.getItem('skillgen_mode') || 'hardcore',
   leaderboardTab: localStorage.getItem('skillgen_mode') || 'hardcore',
+  deckActiveTab: 'active', // 'active' | 'proposals'
+  deckSearchTerm: '',
+  deckFilterBuff: 'ALL',
+  deckFilterDebuff: 'ALL',
   sessionId: 'ses_' + Math.random().toString(36).slice(2, 9) + '_' + Date.now(),
   wave: 1,
   score: 0.0,
@@ -63,9 +57,6 @@ const state = {
   charging: false,
   chargeStartTime: 0,
   chargeMult: 1.0,
-  stylePoints: 0,
-  styleRank: 'D',
-  styleMultiplier: 1.0,
   actionBuffer: [],
   enemies: [],
   projectiles: [],
@@ -127,26 +118,6 @@ function formatTime(seconds) {
   return `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(Math.floor(seconds % 60)).padStart(2, '0')}`;
 }
 
-function addStyle(points) {
-  state.stylePoints = Math.min(250, state.stylePoints + points);
-  updateStyleMeter();
-}
-
-function updateStyleMeter() {
-  let active = STYLE_RANKS[0];
-  for (const sr of STYLE_RANKS) {
-    if (state.stylePoints >= sr.min) active = sr;
-  }
-  state.styleRank = active.rank;
-  state.styleMultiplier = active.mult;
-
-  if (ui.styleMeterBadge) {
-    ui.styleMeterBadge.className = `style-meter-badge ${active.class}`;
-  }
-  if (ui.styleRankText) ui.styleRankText.textContent = `STYLE: ${active.rank}`;
-  if (ui.styleMultText) ui.styleMultText.textContent = `x${active.mult.toFixed(1)}`;
-}
-
 function recordAction(action, customMeta = {}) {
   state.actions.push(action);
   if (state.actions.length > 80) state.actions.shift();
@@ -154,8 +125,6 @@ function recordAction(action, customMeta = {}) {
 
   if (action === 'damage_taken') {
     state.flawlessTimer = 0;
-    state.stylePoints = Math.max(0, state.stylePoints - 35);
-    updateStyleMeter();
   }
 
   const currentMaxHp = clamp(player.maxHp + generatedValue('maxHp'), 50, 300);
@@ -192,6 +161,7 @@ function recordAction(action, customMeta = {}) {
   state.lastAction = action;
   state.generatedSkills = generator.snapshot();
   updateGenerativeHud();
+  renderDeckDashboard();
 }
 
 function generatedModifier(stat) { return generator.modifier(stat) / 100; }
@@ -234,7 +204,6 @@ function reset() {
     fireCooldown: 0, dashCooldown: 0, dashTime: 0, moveTimer: 0, stillTimer: 0,
     telemetryTimer: 0, flawlessTimer: 0, totalInputs: 0, deathCause: 'combat',
     charging: false, chargeStartTime: 0, chargeMult: 1.0,
-    stylePoints: 0, styleRank: 'D', styleMultiplier: 1.0,
     actionBuffer: [], recentKills: [], enemies: [], projectiles: [], particles: [], texts: [],
     zones: [], obstacles: [], logs: [], actions: [], actionCounts: {},
     sequenceCounts: {}, sequenceMatrix: {}, combatTimeline: [], lastAction: null,
@@ -255,7 +224,7 @@ function reset() {
   updateHud();
   fetchLeaderboard(state.leaderboardTab);
   updateModeUI();
-  updateStyleMeter();
+  renderDeckDashboard();
 }
 
 function createArena() {
@@ -418,7 +387,6 @@ function movePlayer(dt) {
   const direction = inputVector();
   let moveSpeed = clamp(260 * (1 + generatedModifier('moveSpeed')), 180, 350);
 
-  // Slow down during infinite mouse charge
   if (state.charging) {
     const holdSec = (performance.now() - state.chargeStartTime) / 1000;
     state.chargeMult = 1.0 + holdSec * 1.5;
@@ -446,7 +414,6 @@ function movePlayer(dt) {
 
   if (state.dashTime > 0) { player.vx *= 1.02; player.vy *= 1.02; }
 
-  // Player-Obstacle collision
   const targetX = player.x + player.vx * dt;
   const targetY = player.y + player.vy * dt;
   for (const obstacle of state.obstacles) {
@@ -507,9 +474,8 @@ function dash() {
 
   if (reflectedAny) {
     recordAction('parry');
-    addStyle(35);
     audio.playCrit();
-    log('Parry // Bullets deflected!');
+    log('Parry // 50% Deflect triggered!');
   } else {
     log('Dash // 100% i-frames engaged');
   }
@@ -578,7 +544,6 @@ function releaseChargedShot() {
 
   if (holdSec >= 0.8) {
     recordAction('charged_shot');
-    addStyle(25);
     audio.playCrit();
     state.texts.push({ x: player.x, y: player.y - 30, text: `CHARGE x${mult.toFixed(1)}!`, color: '#f4bd62', life: 1, vy: -20 });
   } else {
@@ -600,16 +565,13 @@ function hitEnemy(enemy, raw, critical = false) {
   const hitDist = distance(player, enemy);
   if (hitDist < 110) {
     recordAction('point_blank_hit');
-    addStyle(15);
   } else if (hitDist > 420) {
     recordAction('sniper_hit');
-    addStyle(15);
   }
 
   if (enemy.hitAction) recordAction(enemy.hitAction);
   if (critical) {
     recordAction('crit');
-    addStyle(12);
     audio.playCrit();
   } else {
     audio.playHit();
@@ -637,7 +599,7 @@ function killEnemy(enemy) {
 
   const isFast = (state.gameMode === 'fast');
   const waveScale = 1 + (state.wave - 1) * (isFast ? 0.40 : 0.15);
-  const earned = (enemy.baseScore || 0.01) * (enemy.isElite ? 3.0 : 1.0) * waveScale * state.styleMultiplier;
+  const earned = (enemy.baseScore || 0.01) * (enemy.isElite ? 3.0 : 1.0) * waveScale;
   state.score += earned;
 
   state.texts.push({
@@ -653,7 +615,6 @@ function killEnemy(enemy) {
   state.recentKills.push(now);
   if (state.recentKills.length >= 3) {
     recordAction('multikill');
-    addStyle(25);
     state.recentKills = [];
   }
 }
@@ -665,10 +626,6 @@ function updateCombat(dt) {
   player.invuln = Math.max(0, player.invuln - dt);
   player.speedBoost = Math.max(0, player.speedBoost - dt);
   state.flawlessTimer = (state.flawlessTimer || 0) + dt;
-
-  // Style Meter Decay
-  state.stylePoints = Math.max(0, state.stylePoints - dt * 5.0);
-  updateStyleMeter();
 
   const isInvulnerable = player.invuln > 0 || state.dashTime > 0;
 
@@ -685,15 +642,13 @@ function updateCombat(dt) {
       kills: state.kills,
       wave: state.wave,
       apm: Math.round(apm),
-      styleRank: state.styleRank
+      deckCount: generator.equippedSkillIds.size
     });
     if (state.combatTimeline.length > 50) state.combatTimeline.shift();
   }
 
-  // Auto fire
   if (!state.charging && getAutoTarget()) fireAuto();
 
-  // Projectile simulation & obstacle collision
   for (const projectile of state.projectiles) {
     projectile.x += projectile.vx * dt;
     projectile.y += projectile.vy * dt;
@@ -708,7 +663,6 @@ function updateCombat(dt) {
     }
     if (projectile.life <= 0) continue;
 
-    // Player or Reflected bullets hit enemies
     if (projectile.damage > 0) {
       for (const enemy of state.enemies) {
         if (enemy.hp > 0 && !enemy.dead && distance(projectile, enemy) < enemy.r + (projectile.r || 4) + 2) {
@@ -722,7 +676,6 @@ function updateCombat(dt) {
     }
   }
 
-  // Enemy projectiles hit player
   const effectiveArmor = clamp(player.armor + generatedValue('armor'), 0, 60);
   for (const projectile of state.projectiles) {
     if (projectile.damage < 0 && projectile.life > 0) {
@@ -730,7 +683,6 @@ function updateCombat(dt) {
       if (d < player.r + 32 && d > player.r + 6 && !isInvulnerable) {
         if (!projectile.closeCallRecorded) {
           recordAction('close_call');
-          addStyle(18);
           projectile.closeCallRecorded = true;
         }
       }
@@ -748,7 +700,6 @@ function updateCombat(dt) {
   }
   state.projectiles = state.projectiles.filter(item => item.life > 0);
 
-  // Ground Zones
   for (const zone of state.zones) {
     zone.life -= dt;
     if (zone.isWarning) {
@@ -774,7 +725,6 @@ function updateCombat(dt) {
 
   const viewRadius = Math.max(arena().w, arena().h) * 0.65;
 
-  // Enemy movement, obstacle navigation & steering
   for (const enemy of state.enemies) {
     if (enemy.hp <= 0 || enemy.dead) continue;
     let dx = player.x - enemy.x, dy = player.y - enemy.y;
@@ -797,7 +747,6 @@ function updateCombat(dt) {
     enemy.burn = Math.max(0, enemy.burn - dt);
     if (enemy.burn > 0 && Math.random() < dt * 2) hitEnemy(enemy, 4, false);
 
-    // Obstacle avoidance & tangential steering
     let moveDirX = dx / d, moveDirY = dy / d;
     for (const obstacle of state.obstacles) {
       const od = distance(enemy, obstacle);
@@ -900,7 +849,6 @@ function updateCombat(dt) {
       }
     }
 
-    // Hard enemy-obstacle collision
     for (const obstacle of state.obstacles) {
       const od = distance(enemy, obstacle);
       const minObs = obstacle.r + enemy.r;
@@ -912,7 +860,6 @@ function updateCombat(dt) {
       }
     }
 
-    // Hard Enemy-to-Player collision
     const pdx = enemy.x - player.x;
     const pdy = enemy.y - player.y;
     const minPlayerDist = player.r + enemy.r;
@@ -933,7 +880,6 @@ function updateCombat(dt) {
     if (enemy.hp <= 0 && !enemy.dead) killEnemy(enemy);
   }
 
-  // Mob-to-Mob Soft Separation
   const enemyCount = state.enemies.length;
   for (let i = 0; i < enemyCount; i++) {
     const a = state.enemies[i];
@@ -977,7 +923,6 @@ function heal(amount) {
 
 function clearWave() {
   recordAction('wave_clear');
-  addStyle(30);
   audio.playWaveClear();
   state.wave++;
   heal(12);
@@ -1082,7 +1027,7 @@ function gameOver() {
   sendTelemetry();
   if (ui.modalKicker) ui.modalKicker.textContent = 'RUN TERMINATED';
   if (ui.modalTitle) ui.modalTitle.textContent = `${formatTime(state.elapsed)} // ${state.kills} eliminated`;
-  if (ui.modalCopy) ui.modalCopy.textContent = `Operator [${state.username}] · Mode: [${state.gameMode.toUpperCase()}] · Rank [${state.styleRank}] · Score ${state.score.toFixed(2)} PTS · Damage dealt ${Math.round(state.damage)} · Best hit ${Math.round(state.bestHit)} · Wave ${state.wave}`;
+  if (ui.modalCopy) ui.modalCopy.textContent = `Operator [${state.username}] · Mode: [${state.gameMode.toUpperCase()}] · Score ${state.score.toFixed(2)} PTS · Damage dealt ${Math.round(state.damage)} · Best hit ${Math.round(state.bestHit)} · Wave ${state.wave}`;
   if (ui.choices) ui.choices.innerHTML = '';
   if (ui.restartButton) ui.restartButton.classList.remove('hidden');
   if (ui.modal) ui.modal.classList.remove('hidden');
@@ -1095,45 +1040,115 @@ function hideModal() {
   if (ui.infoModal) ui.infoModal.classList.add('hidden');
 }
 
-function handleEquipClick(skillId) {
-  generator.toggleEquip(skillId);
-  state.generatedSkills = generator.snapshot();
-  updateHud();
-  if (state.mode === 'paused') updateAnalysis();
+function handlePermanentLockIn(skillId) {
+  const res = generator.equip(skillId);
+  if (res.success) {
+    audio.playCrit();
+    state.generatedSkills = generator.snapshot();
+    updateHud();
+    renderDeckDashboard();
+    if (state.mode === 'paused') updateAnalysis();
+    log(`Skill Locked In // [${skillId}] permanently bound to run`);
+  }
+}
+
+function renderDeckDashboard() {
+  const allSkills = state.generatedSkills || [];
+  const equippedCount = generator.equippedSkillIds.size;
+  const isDeckFull = equippedCount >= 18;
+
+  if (ui.activeDeckCount) ui.activeDeckCount.textContent = equippedCount;
+  if (ui.deckTopCount) ui.deckTopCount.textContent = `${equippedCount} / 18`;
+  if (ui.tabActiveDeckNum) ui.tabActiveDeckNum.textContent = equippedCount;
+
+  const proposals = allSkills.filter(s => !s.isEquipped);
+  if (ui.tabProposalsNum) ui.tabProposalsNum.textContent = proposals.length;
+
+  const tabFilter = (state.deckActiveTab === 'active')
+    ? (s => s.isEquipped)
+    : (s => !s.isEquipped);
+
+  const search = state.deckSearchTerm.toLowerCase().trim();
+  const buffFilter = state.deckFilterBuff;
+  const debuffFilter = state.deckFilterDebuff;
+
+  const filtered = allSkills.filter(skill => {
+    if (!tabFilter(skill)) return false;
+    if (buffFilter !== 'ALL' && skill.buffStat !== buffFilter) return false;
+    if (debuffFilter !== 'ALL' && skill.debuffStat !== debuffFilter) return false;
+    if (search) {
+      const matchText = `${skill.name} ${skill.pattern} ${skill.source} ${skill.buff} ${skill.debuff} ${skill.styleClass || ''}`.toLowerCase();
+      if (!matchText.includes(search)) return false;
+    }
+    return true;
+  });
+
+  if (ui.deckGrid) {
+    if (!filtered.length) {
+      const emptyMsg = state.deckActiveTab === 'active'
+        ? (equippedCount === 0 ? 'В активном билде нет навыков. Перейдите во вкладку "ПРЕДЛОЖЕНИЯ ИИ" и зафиксируйте нужные пассивки.' : 'Нет активных навыков, соответствующих выбранному фильтру.')
+        : 'Нет доступных предложений по заданному фильтру.';
+      ui.deckGrid.innerHTML = `<div class="empty-state">${emptyMsg}</div>`;
+      return;
+    }
+
+    ui.deckGrid.innerHTML = filtered.map(skill => {
+      const isEq = skill.isEquipped;
+      const sc = skill.styleClass || 'D';
+      const lockBtnHtml = isEq
+        ? `<button class="deck-lock-btn locked" disabled>LOCKED IN ✓</button>`
+        : (isDeckFull
+          ? `<button class="deck-lock-btn deck-full" disabled>SLOTS FULL (18/18)</button>`
+          : `<button class="deck-lock-btn" data-lock-id="${skill.id}">+ ACCEPT & LOCK IN</button>`);
+
+      return `
+        <div class="deck-card ${isEq ? 'locked-in' : 'proposed'}">
+          <div class="deck-card-top">
+            <span class="style-class-tag sc-${sc}">CLASS ${sc}</span>
+            <span style="font:700 11px 'Space Mono',monospace;color:var(--mint);">LV ${skill.level}</span>
+            ${lockBtnHtml}
+          </div>
+          <b style="font-family:'Space Mono',monospace;color:var(--text);font-size:12px;display:block;margin-top:2px;">${skill.name}</b>
+          <div style="font-size:11px;color:var(--muted);">${skill.source}</div>
+          <strong style="color:var(--mint);display:block;font-size:11px;margin-top:2px;">▲ Бафф: ${skill.buff}</strong>
+          <strong style="color:var(--red);display:block;font-size:11px;">▼ Дебафф: ${skill.debuff}</strong>
+          <div style="font-size:10px;color:#888;display:flex;justify-content:space-between;margin-top:4px;">
+            <span>Наблюдений: ${skill.observations} / ${skill.threshold}</span>
+            <span>${isEq ? '⚡ Прокачивается' : '🔒 Заморожен (LV1)'}</span>
+          </div>
+          <div class="generated-track"><i style="width:${skill.progress * 100}%"></i></div>
+        </div>
+      `;
+    }).join('');
+
+    ui.deckGrid.querySelectorAll('.deck-lock-btn[data-lock-id]').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const sid = btn.getAttribute('data-lock-id');
+        if (sid) handlePermanentLockIn(sid);
+      };
+    });
+  }
 }
 
 function updateGenerativeHud() {
   const equippedCount = generator.equippedSkillIds.size;
-  if (ui.patternCount) ui.patternCount.textContent = `DECK: ${equippedCount} / 18 SLOTS`;
+  if (ui.patternCount) ui.patternCount.textContent = `${equippedCount} / 18 SLOTS`;
   if (ui.generatedList) {
-    ui.generatedList.innerHTML = state.generatedSkills.length
-      ? state.generatedSkills.slice(0, 6).map(skill => {
-          const isEq = skill.isEquipped;
-          const isFull = !isEq && equippedCount >= 18;
-          const btnClass = isEq ? 'equipped' : (isFull ? 'full' : '');
-          const btnText = isEq ? 'EQUIPPED ✓' : (isFull ? 'SLOTS FULL' : '+ EQUIP');
-          return `
-            <div class="generated ${isEq ? 'is-equipped' : 'unequipped'}">
-              <div class="generated-head">
-                <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:11px;">${skill.name}</b>
-                <button class="equip-btn ${btnClass}" data-skill-id="${skill.id}">${btnText}</button>
-              </div>
-              <small style="color:var(--mint);display:block;margin-top:2px;">▲ ${skill.buff}</small>
-              <small style="color:var(--red);display:block;margin-top:1px;">▼ ${skill.debuff}</small>
-              <div class="generated-track"><i style="width:${skill.progress * 100}%"></i></div>
+    const equipped = state.generatedSkills.filter(s => s.isEquipped);
+    ui.generatedList.innerHTML = equipped.length
+      ? equipped.slice(0, 5).map(skill => `
+          <div class="generated is-equipped">
+            <div class="generated-head">
+              <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:11px;">${skill.name}</b>
+              <small>LV ${skill.level}</small>
             </div>
-          `;
-        }).join('')
-      : '<div class="empty-state">Collecting combat telemetry...</div>';
-
-    // Bind equip buttons
-    ui.generatedList.querySelectorAll('.equip-btn').forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const sid = btn.getAttribute('data-skill-id');
-        if (sid) handleEquipClick(sid);
-      };
-    });
+            <small style="color:var(--mint);display:block;margin-top:2px;">▲ ${skill.buff}</small>
+            <small style="color:var(--red);display:block;margin-top:1px;">▼ ${skill.debuff}</small>
+            <div class="generated-track"><i style="width:${skill.progress * 100}%"></i></div>
+          </div>
+        `).join('')
+      : '<div class="empty-state">Нет экипированных навыков. Выберите пассивки в панели ниже.</div>';
   }
 }
 
@@ -1233,8 +1248,8 @@ function updateAnalysis() {
         <b>${healBonus >= 0 ? '+' : ''}${healBonus.toFixed(1)}% <small style="color:var(--mint);">(Бонус к восстановлению HP)</small></b>
       </div>
       <div class="stat-breakdown-row" style="border-top:1px solid var(--line);margin-top:6px;padding-top:8px;">
-        <span>SCORE & STYLE (СЧЕТ И СТИЛЬ)</span>
-        <b style="color:var(--gold);font-size:14px;">${state.score.toFixed(2)} PTS <small>[${state.styleRank} x${state.styleMultiplier.toFixed(1)}] (${state.gameMode.toUpperCase()})</small></b>
+        <span>SCORE (СЧЕТ)</span>
+        <b style="color:var(--gold);font-size:14px;">${state.score.toFixed(2)} PTS <small>[${generator.equippedSkillIds.size}/18 SLOTS] (${state.gameMode.toUpperCase()})</small></b>
       </div>
     `;
   }
@@ -1246,39 +1261,25 @@ function updateAnalysis() {
     ui.formulaResult.textContent = `= ${effectiveDps(player.damage, effectiveDamageMult, actualAttackSpeed, effectiveCrit, player.critMult).toFixed(2)} DPS`;
   }
 
-  const equippedCount = generator.equippedSkillIds.size;
   if (ui.skillGraph) {
-    ui.skillGraph.innerHTML = state.generatedSkills.length
-      ? state.generatedSkills.map(skill => {
-          const isEq = skill.isEquipped;
-          const isFull = !isEq && equippedCount >= 18;
-          const btnText = isEq ? '✕ UNEQUIP' : (isFull ? 'SLOTS FULL (18/18)' : '+ EQUIP INTO DECK');
-          const btnClass = isEq ? 'equipped' : (isFull ? 'full' : '');
-          return `
-            <div class="skill-node ${isEq ? 'is-equipped' : 'unequipped'}">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:12px;">${skill.name}</b>
-                <button class="equip-btn ${btnClass}" data-skill-id="${skill.id}">${btnText}</button>
-              </div>
-              <small>${skill.pattern} · LV ${skill.level}</small>
-              <strong style="color:var(--mint);display:block;margin-top:4px;">Бафф: ${skill.buff}</strong>
-              <strong style="color:var(--red);display:block;margin-top:2px;">Дебафф: ${skill.debuff}</strong>
-              <span>${skill.source}</span>
-              <span>Наблюдений: ${skill.observations} / Порог: ${skill.threshold}</span>
-              <span>Формула: ${skill.formula}</span>
-              <i style="width:${skill.progress * 100}%"></i>
+    const equipped = state.generatedSkills.filter(s => s.isEquipped);
+    ui.skillGraph.innerHTML = equipped.length
+      ? equipped.map(skill => `
+          <div class="skill-node is-equipped">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+              <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:12px;">${skill.name}</b>
+              <span class="style-class-tag sc-${skill.styleClass || 'D'}">CLASS ${skill.styleClass || 'D'}</span>
             </div>
-          `;
-        }).join('')
-      : '<div class="empty-state">No stable pattern yet. Move, dash, aim and reflect bullets to train the engine.</div>';
-
-    ui.skillGraph.querySelectorAll('.equip-btn').forEach(btn => {
-      btn.onclick = (e) => {
-        e.stopPropagation();
-        const sid = btn.getAttribute('data-skill-id');
-        if (sid) handleEquipClick(sid);
-      };
-    });
+            <small>${skill.pattern} · LV ${skill.level}</small>
+            <strong style="color:var(--mint);display:block;margin-top:4px;">Бафф: ${skill.buff}</strong>
+            <strong style="color:var(--red);display:block;margin-top:2px;">Дебафф: ${skill.debuff}</strong>
+            <span>${skill.source}</span>
+            <span>Наблюдений: ${skill.observations} / Порог: ${skill.threshold}</span>
+            <span>Формула: ${skill.formula}</span>
+            <i style="width:${skill.progress * 100}%"></i>
+          </div>
+        `).join('')
+      : '<div class="empty-state">В активном билде нет экипированных навыков. Примите пассивки в панели ниже.</div>';
   }
 
   const recent = state.actions.slice(-8).join(' → ') || 'No events recorded';
@@ -1385,7 +1386,6 @@ function draw() {
     ctx.restore();
   }
 
-  // Draw Player
   ctx.save();
   ctx.translate(player.x, player.y);
   const targetAngle = state.charging
@@ -1396,7 +1396,6 @@ function draw() {
   player.angle += angleDelta * Math.min(1, 0.16);
   ctx.rotate(player.angle);
 
-  // Dash trail & invulnerability glow
   if (player.invuln > 0 || state.dashTime > 0) {
     ctx.shadowBlur = 20;
     ctx.shadowColor = '#86e0b1';
@@ -1412,13 +1411,11 @@ function draw() {
   ctx.fill(); ctx.stroke();
   ctx.restore();
 
-  // Infinite Mouse Charge Visual Reticle
   if (state.charging) {
     const holdSec = (performance.now() - state.chargeStartTime) / 1000;
     const mult = 1.0 + holdSec * 1.5;
     const ringRadius = clamp(26 + holdSec * 6, 26, 65);
 
-    // Aim Laser Line to cursor
     ctx.strokeStyle = 'rgba(244, 189, 98, 0.6)';
     ctx.lineWidth = clamp(1 + holdSec * 0.8, 1, 6);
     ctx.beginPath();
@@ -1426,14 +1423,12 @@ function draw() {
     ctx.lineTo(state.mouse.x, state.mouse.y);
     ctx.stroke();
 
-    // Charging Arc around player
     ctx.strokeStyle = '#f4bd62';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(player.x, player.y, ringRadius, 0, TAU * Math.min(1, holdSec / 3.0));
     ctx.stroke();
 
-    // Real-time Damage Multiplier Readout
     ctx.fillStyle = '#f4bd62';
     ctx.font = '700 13px Space Mono';
     ctx.textAlign = 'center';
@@ -1484,7 +1479,7 @@ window.addEventListener('keydown', event => {
   handleUserAudioUnlock();
   state.totalInputs++;
 
-  if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) {
+  if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.tagName === 'SELECT')) {
     if (event.code === 'Escape') {
       if (ui.loginModal) ui.loginModal.classList.add('hidden');
       if (ui.infoModal) ui.infoModal.classList.add('hidden');
@@ -1512,7 +1507,7 @@ window.addEventListener('keydown', event => {
 });
 
 window.addEventListener('keyup', event => {
-  if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA')) {
+  if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || event.target.tagName === 'SELECT')) {
     return;
   }
   state.keys.delete(event.code);
@@ -1553,6 +1548,42 @@ if (ui.audioToggleBtn) {
     const unmuted = audio.toggleMute();
     ui.audioToggleBtn.textContent = unmuted ? '🔊' : '🔇';
     ui.audioToggleBtn.title = unmuted ? 'Звук включен (M)' : 'Звук выключен (M)';
+  };
+}
+
+// Deck Filter Event Listeners
+if (ui.tabActiveDeck) {
+  ui.tabActiveDeck.onclick = () => {
+    state.deckActiveTab = 'active';
+    ui.tabActiveDeck.classList.add('active');
+    if (ui.tabProposals) ui.tabProposals.classList.remove('active');
+    renderDeckDashboard();
+  };
+}
+if (ui.tabProposals) {
+  ui.tabProposals.onclick = () => {
+    state.deckActiveTab = 'proposals';
+    ui.tabProposals.classList.add('active');
+    if (ui.tabActiveDeck) ui.tabActiveDeck.classList.remove('active');
+    renderDeckDashboard();
+  };
+}
+if (ui.deckSearchInput) {
+  ui.deckSearchInput.oninput = (e) => {
+    state.deckSearchTerm = e.target.value;
+    renderDeckDashboard();
+  };
+}
+if (ui.filterBuffSelect) {
+  ui.filterBuffSelect.onchange = (e) => {
+    state.deckFilterBuff = e.target.value;
+    renderDeckDashboard();
+  };
+}
+if (ui.filterDebuffSelect) {
+  ui.filterDebuffSelect.onchange = (e) => {
+    state.deckFilterDebuff = e.target.value;
+    renderDeckDashboard();
   };
 }
 
