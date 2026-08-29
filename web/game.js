@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_19';
-import { SoundEngine } from './audio.js?v=20260829_19';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_20';
+import { SoundEngine } from './audio.js?v=20260829_20';
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
@@ -975,8 +975,7 @@ function updateGenerativeHud() {
       ? state.generatedSkills.slice(0, 5).map(skill => `
           <div class="generated">
             <div class="generated-head">
-              <div class="trait-hash-badge">${skill.traitHash || '#TRAIT'}</div>
-              <b>${skill.name} // LV ${skill.level}</b>
+              <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:11px;">${skill.name}</b>
               <small>${skill.confidence}%</small>
             </div>
             <small style="color:var(--mint);display:block;margin-top:2px;">▲ ${skill.buff}</small>
@@ -1101,8 +1100,7 @@ function updateAnalysis() {
     ui.skillGraph.innerHTML = state.generatedSkills.length
       ? state.generatedSkills.map(skill => `
           <div class="skill-node">
-            <div class="trait-hash-badge" style="margin-bottom:4px;">${skill.traitHash || '#TRAIT'}</div>
-            <b>${skill.name}</b>
+            <b style="font-family:'Space Mono',monospace;color:var(--mint);font-size:12px;">${skill.name}</b>
             <small>${skill.pattern} · LV ${skill.level}</small>
             <strong style="color:var(--mint);display:block;margin-top:4px;">Бафф: ${skill.buff}</strong>
             <strong style="color:var(--red);display:block;margin-top:2px;">Дебафф: ${skill.debuff}</strong>
@@ -1299,6 +1297,10 @@ window.addEventListener('keydown', event => {
     event.preventDefault();
     if (ui.audioToggleBtn) ui.audioToggleBtn.click();
   }
+  if (event.code === 'KeyI' && !event.repeat) {
+    event.preventDefault();
+    toggleInfoModal();
+  }
 });
 
 window.addEventListener('keyup', event => {
@@ -1334,6 +1336,21 @@ if (ui.audioToggleBtn) {
 }
 
 // Operator Auth Modal
+
+// Info Guide Modal
+function toggleInfoModal() {
+  if (!ui.infoModal) return;
+  const isHidden = ui.infoModal.classList.contains('hidden');
+  if (isHidden) {
+    state.keys.clear();
+    ui.infoModal.classList.remove('hidden');
+  } else {
+    ui.infoModal.classList.add('hidden');
+  }
+}
+if (ui.infoModalBtn) ui.infoModalBtn.onclick = toggleInfoModal;
+if (ui.closeInfoBtn) ui.closeInfoBtn.onclick = toggleInfoModal;
+
 if (ui.loginModalBtn) {
   ui.loginModalBtn.onclick = () => {
     state.keys.clear();

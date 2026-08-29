@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260829_19">
+  <link rel="stylesheet" href="styles.css?v=20260829_20">
 </head>
 <body>
   <main class="shell">
@@ -32,6 +32,7 @@
         </button>
       </div>
       <div class="top-actions">
+        <button class="icon-button" id="infoModalBtn" title="Справка, управление и генератор (I)">ℹ️</button>
         <button class="icon-button" id="audioToggleBtn" title="Звук и музыка (M)">🔊</button>
         <button class="icon-button" id="pauseButton" title="Пауза и анализ (P / Esc)">Ⅱ</button>
         <button class="icon-button" id="newRunButton" title="Начать новый забег">↻</button>
@@ -172,6 +173,85 @@
     </div>
   </div>
 
+  <!-- Info & Guide Modal -->
+  <div class="modal hidden" id="infoModal">
+    <div class="modal-panel info-modal-card">
+      <div class="modal-head-row">
+        <div>
+          <span class="gold-badge">ℹ️ SYSTEM INTEL</span>
+          <h2 style="margin-top:4px;font-size:18px;">GUIDE & GENERATIVE ARCHITECTURE</h2>
+        </div>
+        <button class="icon-button" id="closeInfoBtn">✕</button>
+      </div>
+      
+      <div class="info-content-scroll">
+        <div class="info-section">
+          <h4>🎮 УПРАВЛЕНИЕ (CONTROLS)</h4>
+          <div class="info-grid">
+            <div><code>W A S D</code> / <code>Стрелки</code></div><div>Перемещение оператора</div>
+            <div><code>ПРОБЕЛ</code></div><div>Рывок (Dash) с 100% неуязвимостью (i-frames)</div>
+            <div><code>АВТООГОНЬ</code></div><div>Автоматический огонь по целям в секторе</div>
+            <div><code>P</code> / <code>ESC</code></div><div>Пауза и аналитический разбор билда</div>
+            <div><code>M</code></div><div>Включение / выключение звука и музыки</div>
+            <div><code>I</code></div><div>Открыть это окно справки</div>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h4>🧬 КАК РАБОТАЕТ ГЕНЕРАЦИЯ НАВЫКОВ</h4>
+          <p>Движок непрерывно анализирует ваши реальные действия, маневры и тактическое позиционирование в бою:</p>
+          <ul>
+            <li><b>Позиционирование:</b> Стрельба в упор (<code>PNT</code>) усиливает урон, снайперский огонь с дистанции (<code>SNI</code>) развивает криты и сектор обзора.</li>
+            <li><b>Маневренность:</b> Активные рывки (<code>DSH</code>) и уклонения на грани смерти (<code>EVN</code>) разгоняют скорость и маневренность.</li>
+            <li><b>Тактический баланс:</b> Каждая способность имеет соразмерный штраф (дебафф), отражающий цену боевого стиля.</li>
+            <li><b>Комбо до 4 шагов:</b> Цепочки осознанных действий за 1.8 сек открывают редкие пассивки высших рангов (Tier 1 → Tier 4).</li>
+            <li><b>Контекстные аффиксы:</b> <code>[ADR]</code> (Адреналин при &lt;40% HP), <code>[OVR]</code> (Овердрайв без урона), <code>[SLY]</code> (Схватка с боссом).</li>
+          </ul>
+        </div>
+
+        <div class="info-section">
+          <h4>🌌 ВАРИАЦИИ И ЕМКОСТЬ СИСТЕМЫ</h4>
+          <div class="stat-highlight-box">
+            <div class="stat-h-item">
+              <b>18</b>
+              <small>МАКС. ПАССИВОК В БИЛДЕ</small>
+            </div>
+            <div class="stat-h-item">
+              <b>88,740</b>
+              <small>ТАКТИЧЕСКИХ ЦЕПОЧЕК</small>
+            </div>
+            <div class="stat-h-item">
+              <b>> 1.17 МЛРД</b>
+              <small>ПРОЦЕДУРНЫХ ВАРИАЦИЙ</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h4>🏷️ РАСШИФРОВКА ТРЕЙТ-ХЕША СПОСОБНОСТИ</h4>
+          <p style="font-family:'Space Mono',monospace;color:var(--mint);font-size:12px;background:#0d1c1a;padding:6px;border:1px solid #24443c;margin-bottom:6px;">
+            #[ДЕЙСТВИЕ] [БАФФ]:[ДЕБАФФ]-[ТИР]·L[УРОВЕНЬ] [АФФИКС]
+          </p>
+          <div class="info-tags-legend">
+            <span><b>MOV</b>=Движение</span>
+            <span><b>DSH</b>=Рывок</span>
+            <span><b>SNI</b>=Снайпер</span>
+            <span><b>PNT</b>=В упор</span>
+            <span><b>EVN</b>=Уклонение</span>
+            <span><b>CRT</b>=Крит</span>
+            <span><b>KIL</b>=Убийство</span>
+            <span><b>DMG</b>=Урон</span>
+            <span><b>SPD</b>=Скорость</span>
+            <span><b>ARM</b>=Броня</span>
+            <span><b>RNG</b>=Сектор</span>
+            <span><b>ATK</b>=Темп огня</span>
+            <span><b>CLR</b>=Без штрафа</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Login Modal -->
   <div class="modal hidden" id="loginModal">
     <div class="modal-panel">
@@ -189,6 +269,6 @@
     </div>
   </div>
 
-  <script type="module" src="game.js?v=20260829_19"></script>
+  <script type="module" src="game.js?v=20260829_20"></script>
 </body>
 </html>

@@ -369,11 +369,7 @@ export class GenerativeSkillEngine {
     const buffVal = calcBuffValue(rule.buff.base * contextBonus, level);
     const debuffVal = calcDebuffValue(rule.debuff, level);
 
-    let morphedName = rule.name + (affixCode ? ` [${affixCode}]` : '');
-    if (level >= 6) morphedName = `Mastered ${morphedName}`;
-    else if (level >= 3) morphedName = `Enhanced ${morphedName}`;
-
-    // Cyber Trait Hash Generator (Encodes action, buff, debuff, tier, level, and affix)
+    // Cyber Trait Hash as the official skill name
     const actParts = pattern.split('→');
     const actCode = actParts.map(p => ACT_TAGS[p] || p.slice(0, 3).toUpperCase()).join('+');
     const bTag = STAT_TAGS[rule.buff.stat] || 'GEN';
@@ -391,7 +387,7 @@ export class GenerativeSkillEngine {
 
     return {
       id: `skill_${seed.toString(16)}`,
-      name: morphedName,
+      name: traitHash,
       traitHash,
       tier,
       pattern,
