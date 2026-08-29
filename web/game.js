@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_23';
-import { SoundEngine } from './audio.js?v=20260829_23';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_24';
+import { SoundEngine } from './audio.js?v=20260829_24';
 
 function getOrCreateGuestUsername() {
   let stored = localStorage.getItem('skillgen_username');
@@ -136,7 +136,13 @@ function recordAction(action, customMeta = {}) {
   };
 
   const now = state.elapsed;
-  state.actionBuffer.push({ action, time: now });
+  
+  // Prevent immediate consecutive duplicate passive actions in the combo buffer
+  const lastBufItem = state.actionBuffer[state.actionBuffer.length - 1];
+  const isPassiveAction = (action === 'move' || action === 'damage_taken' || action === 'standstill' || action === 'heal');
+  if (!lastBufItem || !(lastBufItem.action === action && isPassiveAction)) {
+    state.actionBuffer.push({ action, time: now });
+  }
 
   // Dynamic Elastic Combo Window: 1.4s base + 0.45s per unique action
   const uniqueActionTypes = new Set(state.actionBuffer.map(i => i.action));
@@ -146,10 +152,17 @@ function recordAction(action, customMeta = {}) {
 
   generator.record(action, context);
 
-  // Train sequences of all lengths up to active buffer length (unlimited chain length!)
+  // Train valid sequences up to active buffer length
   const bufLen = state.actionBuffer.length;
   for (let len = 2; len <= Math.min(bufLen, 8); len++) {
-    const subSeq = state.actionBuffer.slice(bufLen - len).map(i => i.action).join('→');
+    const subActions = state.actionBuffer.slice(bufLen - len).map(i => i.action);
+    const uniqueInSeq = new Set(subActions);
+    if (uniqueInSeq.size < 2) continue; // Disallow mono-action chains like move->move->move
+    if (subActions.filter(a => a === 'move').length > 1) continue; // Move unique in combo
+    if (subActions.filter(a => a === 'damage_taken').length > 1) continue; // Damage taken unique in combo
+    if (subActions.filter(a => a === 'standstill').length > 1) continue; // Standstill unique in combo
+
+    const subSeq = subActions.join('→');
     state.sequenceCounts[subSeq] = (state.sequenceCounts[subSeq] || 0) + 1;
     generator.record(subSeq, context);
   }
@@ -391,10 +404,9 @@ function movePlayer(dt) {
 
   if (direction) {
     state.stillTimer = 0;
-    state.moveTimer = (state.moveTimer || 0) + dt;
-    if (state.moveTimer >= 0.3) {
+    // Only record 'move' once upon starting movement or transitioning from non-move action
+    if (state.lastAction !== 'move') {
       recordAction('move');
-      state.moveTimer = 0;
     }
     player.vx += (direction.x * moveSpeed - player.vx) * Math.min(1, dt * 10);
     player.vy += (direction.y * moveSpeed - player.vy) * Math.min(1, dt * 10);
@@ -402,9 +414,8 @@ function movePlayer(dt) {
     player.vx *= Math.pow(0.001, dt);
     player.vy *= Math.pow(0.001, dt);
     state.stillTimer = (state.stillTimer || 0) + dt;
-    if (state.stillTimer >= 1.0) {
+    if (state.stillTimer >= 0.8 && state.lastAction !== 'standstill') {
       recordAction('standstill');
-      state.stillTimer = 0;
     }
   }
 

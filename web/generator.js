@@ -34,11 +34,7 @@ const SEMANTIC_RULES = {
     buff: { stat: 'moveSpeed', base: 0.5, unit: '%', label: 'скорость движения' },
     debuff: { stat: 'targetRange', base: 1.6, unit: '%', label: 'сужение сектора при беге' }
   },
-  'move→move': {
-    name: 'Continuous Momentum', tier: 'common', threshold: 110, styleClass: 'D',
-    buff: { stat: 'moveSpeed', base: 0.7, unit: '%', label: 'разгон скорости' },
-    debuff: { stat: 'armor', base: 0.7, unit: '', label: 'инерционная уязвимость' }
-  },
+
 
   // Class C: Tactical 1-step positioning
   standstill: {
@@ -118,11 +114,7 @@ const SEMANTIC_RULES = {
   },
 
   // Class B: Tactical 2-step combos
-  'standstill→standstill': {
-    name: 'Fortified Bunker', tier: 'uncommon', threshold: 45, styleClass: 'B',
-    buff: { stat: 'armor', base: 1.2, unit: '', label: 'укрепление брони' },
-    debuff: { stat: 'moveSpeed', base: 2.0, unit: '%', label: 'фиксация в грунте' }
-  },
+
   'move→dash': {
     name: 'Vector Drift', tier: 'uncommon', threshold: 48, styleClass: 'B',
     buff: { stat: 'dashCooldown', base: 2.5, unit: '%', label: 'перезарядка рывка' },
@@ -200,11 +192,7 @@ const SEMANTIC_RULES = {
     buff: { stat: 'damage', base: 2.4, unit: '%', label: 'урон серии' },
     debuff: { stat: 'armor', base: 0.8, unit: '', label: 'боевой раж' }
   },
-  'damage_taken→damage_taken': {
-    name: 'Indomitable Hull', tier: 'rare', threshold: 24, styleClass: 'A',
-    buff: { stat: 'maxHp', base: 3.5, unit: '', label: 'закалка корпуса (+HP)' },
-    debuff: { stat: 'dashCooldown', base: 2.0, unit: '%', label: 'деформация систем' }
-  },
+
   'damage_taken→heal': {
     name: 'Vampiric Rebound', tier: 'rare', threshold: 20, styleClass: 'A',
     buff: { stat: 'healPower', base: 3.0, unit: '%', label: 'эффективность лечения' },
@@ -311,6 +299,31 @@ const SEMANTIC_RULES = {
 const hashString = value => [...value].reduce((hash, char) => ((hash << 5) - hash + char.charCodeAt(0)) | 0, 7) >>> 0;
 
 // Unlimited super-linear level curve: Level = 1 + floor(((ratio - 1) / 2.5) ^ (1 / 1.85))
+
+function isValidComboSequence(pattern) {
+  if (!pattern.includes('→')) return true;
+  const parts = pattern.split('→');
+  if (parts.length < 2) return false;
+
+  const unique = new Set(parts);
+  if (unique.size < 2) return false; // Disallow mono-action sequences
+
+  // Movement, Damage Taken, and Standstill must be strictly unique in any combo chain
+  if (parts.filter(p => p === 'move').length > 1) return false;
+  if (parts.filter(p => p === 'damage_taken').length > 1) return false;
+  if (parts.filter(p => p === 'standstill').length > 1) return false;
+  if (parts.filter(p => p === 'heal').length > 1) return false;
+
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (parts[i] === parts[i + 1]) {
+      if (parts[i] === 'move' || parts[i] === 'damage_taken' || parts[i] === 'standstill' || parts[i] === 'heal') {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 const calcLevel = (observations, threshold) => {
   if (!observations || observations < threshold) return 0;
   const ratio = observations / threshold;
@@ -389,6 +402,7 @@ export class GenerativeSkillEngine {
     const weight = isFast ? 2 : 1;
 
     const isSeq = pattern.includes('→');
+    if (isSeq && !isValidComboSequence(pattern)) return;
     const dict = isSeq ? this.sequences : this.events;
     const prevObs = dict[pattern] || 0;
 
