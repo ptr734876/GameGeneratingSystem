@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_24';
-import { SoundEngine } from './audio.js?v=20260829_24';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_25';
+import { SoundEngine } from './audio.js?v=20260829_25';
 
 function getOrCreateGuestUsername() {
   let stored = localStorage.getItem('skillgen_username');
@@ -398,8 +398,12 @@ function movePlayer(dt) {
 
   if (state.charging) {
     const holdSec = (performance.now() - state.chargeStartTime) / 1000;
-    state.chargeMult = 1.0 + holdSec * 1.5;
-    moveSpeed /= state.chargeMult;
+    if (holdSec >= 1.0) {
+      state.chargeMult = 1.0 + (holdSec - 1.0) * 1.8;
+      moveSpeed /= state.chargeMult;
+    } else {
+      state.chargeMult = 1.0;
+    }
   }
 
   if (direction) {
@@ -521,42 +525,48 @@ function fireAuto() {
 function releaseChargedShot() {
   if (!state.charging || state.mode !== 'playing') return;
   const holdSec = (performance.now() - state.chargeStartTime) / 1000;
-  const mult = 1.0 + holdSec * 1.5;
 
+  state.charging = false;
+  state.chargeMult = 1.0;
+
+  if (holdSec < 1.0) {
+    fireManualTap();
+    return;
+  }
+
+  if (state.fireCooldown > 0) return;
+
+  const mult = 1.0 + (holdSec - 1.0) * 1.8;
   const angle = Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x);
   const damageBonus = generatedModifier('damage');
+  const attackBonus = generatedModifier('attackSpeed');
   const effectiveCrit = generator.critRate(player.crit);
   const baseDmg = clamp(player.damage * player.damageMult * (1 + damageBonus), 6, 250);
   const blastDmg = baseDmg * mult;
 
-  const radius = clamp(4 * Math.sqrt(mult), 4, 22);
-  const pierceCount = Math.floor(1 + holdSec * 1.5);
+  const radius = clamp(5 * Math.sqrt(mult), 5, 24);
+  const pierceCount = Math.floor(1 + (holdSec - 1.0) * 1.5);
 
   state.projectiles.push({
     x: player.x + Math.cos(angle) * 20,
     y: player.y + Math.sin(angle) * 20,
-    vx: Math.cos(angle) * clamp(570 + holdSec * 30, 570, 850),
-    vy: Math.sin(angle) * clamp(570 + holdSec * 30, 570, 850),
+    vx: Math.cos(angle) * clamp(600 + (holdSec - 1.0) * 30, 600, 900),
+    vy: Math.sin(angle) * clamp(600 + (holdSec - 1.0) * 30, 600, 900),
     life: 1.8,
     damage: blastDmg,
     critChance: effectiveCrit,
     r: radius,
     pierce: pierceCount,
-    isCharged: holdSec >= 0.8
+    isCharged: true
   });
 
-  state.shake = Math.min(12, 3 + mult * 0.8);
-  state.charging = false;
-  state.chargeMult = 1.0;
+  const actualAttackSpeed = clamp(player.attackSpeed * (1 + attackBonus), 0.3, 5.0);
+  state.fireCooldown = 1.0 / actualAttackSpeed;
 
-  if (holdSec >= 0.8) {
-    recordAction('charged_shot');
-    audio.playCrit();
-    state.texts.push({ x: player.x, y: player.y - 30, text: `CHARGE x${mult.toFixed(1)}!`, color: '#f4bd62', life: 1, vy: -20 });
-  } else {
-    recordAction('manual_shot');
-    audio.playShot();
-  }
+  state.shake = Math.min(14, 4 + mult * 0.8);
+  recordAction('charged_shot');
+  audio.playCrit();
+  state.texts.push({ x: player.x, y: player.y - 30, text: `CHARGE x${mult.toFixed(1)}!`, color: '#f4bd62', life: 1, vy: -20 });
 }
 
 function hitEnemy(enemy, raw, critical = false) {
@@ -1420,26 +1430,31 @@ function draw() {
 
   if (state.charging) {
     const holdSec = (performance.now() - state.chargeStartTime) / 1000;
-    const mult = 1.0 + holdSec * 1.5;
-    const ringRadius = clamp(26 + holdSec * 6, 26, 65);
+    const isEngaged = holdSec >= 1.0;
+    const mult = isEngaged ? (1.0 + (holdSec - 1.0) * 1.8) : 1.0;
+    const ringRadius = clamp(26 + (isEngaged ? (holdSec - 1.0) * 6 : 0), 26, 65);
 
-    ctx.strokeStyle = 'rgba(244, 189, 98, 0.6)';
-    ctx.lineWidth = clamp(1 + holdSec * 0.8, 1, 6);
+    // Aim Laser
+    ctx.strokeStyle = isEngaged ? 'rgba(244, 189, 98, 0.7)' : 'rgba(134, 224, 177, 0.4)';
+    ctx.lineWidth = clamp(1 + (isEngaged ? (holdSec - 1.0) * 0.8 : 0), 1, 6);
     ctx.beginPath();
     ctx.moveTo(player.x, player.y);
     ctx.lineTo(state.mouse.x, state.mouse.y);
     ctx.stroke();
 
-    ctx.strokeStyle = '#f4bd62';
+    // Charge Arc
+    ctx.strokeStyle = isEngaged ? '#f4bd62' : '#86e0b1';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.arc(player.x, player.y, ringRadius, 0, TAU * Math.min(1, holdSec / 3.0));
+    ctx.arc(player.x, player.y, ringRadius, 0, isEngaged ? TAU * Math.min(1, (holdSec - 1.0) / 2.0) : TAU * (holdSec / 1.0));
     ctx.stroke();
 
-    ctx.fillStyle = '#f4bd62';
-    ctx.font = '700 13px Space Mono';
+    // Text Readout
+    ctx.fillStyle = isEngaged ? '#f4bd62' : '#86e0b1';
+    ctx.font = '700 12px Space Mono';
     ctx.textAlign = 'center';
-    ctx.fillText(`CHARGE ×${mult.toFixed(1)} DMG`, player.x, player.y - ringRadius - 10);
+    const chargeLabel = isEngaged ? `OVERCHARGE ×${mult.toFixed(1)} DMG` : `CHARGING (${(1.0 - holdSec).toFixed(1)}s)`;
+    ctx.fillText(chargeLabel, player.x, player.y - ringRadius - 10);
   }
 
   for (const text of state.texts) {
@@ -1527,9 +1542,10 @@ canvas.addEventListener('pointermove', event => {
 });
 
 function fireManualTap() {
-  if (state.mode !== 'playing') return;
+  if (state.mode !== 'playing' || state.fireCooldown > 0) return;
   const angle = Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x);
   const damageBonus = generatedModifier('damage');
+  const attackBonus = generatedModifier('attackSpeed');
   const effectiveCrit = generator.critRate(player.crit);
   const actualDamage = clamp(player.damage * player.damageMult * (1 + damageBonus), 6, 250);
 
@@ -1544,6 +1560,9 @@ function fireManualTap() {
     r: 4,
     pierce: 1
   });
+
+  const actualAttackSpeed = clamp(player.attackSpeed * (1 + attackBonus), 0.3, 5.0);
+  state.fireCooldown = 1.0 / actualAttackSpeed; // 1.0 second base cooldown
 
   recordAction('manual_shot');
   audio.playShot();
