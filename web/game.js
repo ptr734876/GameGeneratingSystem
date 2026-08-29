@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_22';
-import { SoundEngine } from './audio.js?v=20260829_22';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_23';
+import { SoundEngine } from './audio.js?v=20260829_23';
 
 function getOrCreateGuestUsername() {
   let stored = localStorage.getItem('skillgen_username');
@@ -120,7 +120,7 @@ function formatTime(seconds) {
 
 function recordAction(action, customMeta = {}) {
   state.actions.push(action);
-  if (state.actions.length > 80) state.actions.shift();
+  if (state.actions.length > 100) state.actions.shift();
   state.actionCounts[action] = (state.actionCounts[action] || 0) + 1;
 
   if (action === 'damage_taken') {
@@ -138,24 +138,20 @@ function recordAction(action, customMeta = {}) {
   const now = state.elapsed;
   state.actionBuffer.push({ action, time: now });
 
-  const comboWindow = 1.8;
-  state.actionBuffer = state.actionBuffer.filter(item => (now - item.time) <= comboWindow);
+  // Dynamic Elastic Combo Window: 1.4s base + 0.45s per unique action
+  const uniqueActionTypes = new Set(state.actionBuffer.map(i => i.action));
+  const dynamicWindow = 1.4 + 0.45 * Math.max(0, uniqueActionTypes.size - 1);
+
+  state.actionBuffer = state.actionBuffer.filter(item => (now - item.time) <= dynamicWindow);
 
   generator.record(action, context);
 
+  // Train sequences of all lengths up to active buffer length (unlimited chain length!)
   const bufLen = state.actionBuffer.length;
-  if (bufLen >= 2) {
-    const seq2 = `${state.actionBuffer[bufLen - 2].action}→${action}`;
-    state.sequenceCounts[seq2] = (state.sequenceCounts[seq2] || 0) + 1;
-    generator.record(seq2, context);
-  }
-  if (bufLen >= 3) {
-    const seq3 = `${state.actionBuffer[bufLen - 3].action}→${state.actionBuffer[bufLen - 2].action}→${action}`;
-    generator.record(seq3, context);
-  }
-  if (bufLen >= 4) {
-    const seq4 = `${state.actionBuffer[bufLen - 4].action}→${state.actionBuffer[bufLen - 3].action}→${state.actionBuffer[bufLen - 2].action}→${action}`;
-    generator.record(seq4, context);
+  for (let len = 2; len <= Math.min(bufLen, 8); len++) {
+    const subSeq = state.actionBuffer.slice(bufLen - len).map(i => i.action).join('→');
+    state.sequenceCounts[subSeq] = (state.sequenceCounts[subSeq] || 0) + 1;
+    generator.record(subSeq, context);
   }
 
   state.lastAction = action;
@@ -647,7 +643,7 @@ function updateCombat(dt) {
     if (state.combatTimeline.length > 50) state.combatTimeline.shift();
   }
 
-  if (!state.charging && getAutoTarget()) fireAuto();
+  // Pure 100% manual player-driven combat (Auto-Attack & Auto-Aim completely removed)
 
   for (const projectile of state.projectiles) {
     projectile.x += projectile.vx * dt;
@@ -1325,14 +1321,7 @@ function draw() {
     ctx.beginPath(); ctx.arc(obstacle.x, obstacle.y, obstacle.r, 0, TAU); ctx.fill(); ctx.stroke();
   }
 
-  if (target && !state.charging) {
-    ctx.strokeStyle = 'rgba(134,224,177,.28)';
-    ctx.setLineDash([5, 7]);
-    ctx.beginPath(); ctx.moveTo(player.x, player.y); ctx.lineTo(target.x, target.y); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.strokeStyle = '#86e0b1';
-    ctx.beginPath(); ctx.arc(target.x, target.y, target.r + 7, 0, TAU); ctx.stroke();
-  }
+  // Pure manual aim - no automated crosshairs
 
   for (const zone of state.zones) {
     if (zone.isWarning) {
@@ -1388,12 +1377,19 @@ function draw() {
 
   ctx.save();
   ctx.translate(player.x, player.y);
-  const targetAngle = state.charging
-    ? Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x)
-    : (target ? Math.atan2(target.y - player.y, target.x - player.x) : Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x));
-  
+  // Facing direction: Look along movement velocity vector, or snap to cursor when aiming/shooting/charging
+  const isMoving = Math.hypot(player.vx, player.vy) > 15;
+  const isAimingOrCharging = state.charging || (state.mouse && state.mouse.down);
+  let targetAngle = player.angle;
+
+  if (isAimingOrCharging) {
+    targetAngle = Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x);
+  } else if (isMoving) {
+    targetAngle = Math.atan2(player.vy, player.vx);
+  }
+
   const angleDelta = Math.atan2(Math.sin(targetAngle - player.angle), Math.cos(targetAngle - player.angle));
-  player.angle += angleDelta * Math.min(1, 0.16);
+  player.angle += angleDelta * Math.min(1, 0.22);
   ctx.rotate(player.angle);
 
   if (player.invuln > 0 || state.dashTime > 0) {
@@ -1519,6 +1515,29 @@ canvas.addEventListener('pointermove', event => {
   state.mouse.y = event.clientY - rect.top;
 });
 
+function fireManualTap() {
+  if (state.mode !== 'playing') return;
+  const angle = Math.atan2(state.mouse.y - player.y, state.mouse.x - player.x);
+  const damageBonus = generatedModifier('damage');
+  const effectiveCrit = generator.critRate(player.crit);
+  const actualDamage = clamp(player.damage * player.damageMult * (1 + damageBonus), 6, 250);
+
+  state.projectiles.push({
+    x: player.x + Math.cos(angle) * 18,
+    y: player.y + Math.sin(angle) * 18,
+    vx: Math.cos(angle) * 620,
+    vy: Math.sin(angle) * 620,
+    life: 1.5,
+    damage: actualDamage,
+    critChance: effectiveCrit,
+    r: 4,
+    pierce: 1
+  });
+
+  recordAction('manual_shot');
+  audio.playShot();
+}
+
 canvas.addEventListener('pointerdown', (e) => {
   handleUserAudioUnlock();
   state.totalInputs++;
@@ -1530,7 +1549,14 @@ canvas.addEventListener('pointerdown', (e) => {
 window.addEventListener('pointerup', () => {
   state.mouse.down = false;
   if (state.charging) {
-    releaseChargedShot();
+    const holdSec = (performance.now() - state.chargeStartTime) / 1000;
+    if (holdSec < 0.20) {
+      state.charging = false;
+      state.chargeMult = 1.0;
+      fireManualTap();
+    } else {
+      releaseChargedShot();
+    }
   }
 });
 
