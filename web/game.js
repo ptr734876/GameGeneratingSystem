@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_16';
-import { SoundEngine } from './audio.js?v=20260829_16';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_17';
+import { SoundEngine } from './audio.js?v=20260829_17';
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
