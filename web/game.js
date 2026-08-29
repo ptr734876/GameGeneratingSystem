@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_17';
-import { SoundEngine } from './audio.js?v=20260829_17';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_18';
+import { SoundEngine } from './audio.js?v=20260829_18';
 
 const canvas = document.querySelector('#game');
 const ctx = canvas.getContext('2d');
@@ -441,8 +441,6 @@ function fire() {
   const target = getAutoTarget();
   if (!target) return;
 
-  recordAction('target_lock');
-  recordAction('fire');
   const angle = Math.atan2(target.y - player.y, target.x - player.x);
   const attackBonus = generatedModifier('attackSpeed');
   const damageBonus = generatedModifier('damage');
