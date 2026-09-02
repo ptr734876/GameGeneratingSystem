@@ -391,7 +391,7 @@ export class GenerativeSkillEngine {
     return { success: true, count: this.equippedSkillIds.size };
   }
 
-  record(pattern, meta = {}) {
+  record(pattern, meta = {}, skipRegenerate = false) {
     const isFast = (this.mode === 'fast');
     const weight = isFast ? 2 : 1;
 
@@ -411,8 +411,17 @@ export class GenerativeSkillEngine {
       dict[pattern] = prevObs + weight;
     }
 
+    // Prune excessive unconfirmed sequences to prevent memory leaks and performance degradation
+    if (isSeq && Object.keys(this.sequences).length > 120) {
+      const entries = Object.entries(this.sequences);
+      entries.sort((a, b) => b[1] - a[1]);
+      this.sequences = Object.fromEntries(entries.slice(0, 80));
+    }
+
     this.lastContext = { ...this.lastContext, ...meta };
-    this.regenerate(meta);
+    if (!skipRegenerate) {
+      this.regenerate(meta);
+    }
   }
 
   regenerate(meta = {}) {

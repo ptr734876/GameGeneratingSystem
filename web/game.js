@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260829_26';
-import { SoundEngine } from './audio.js?v=20260829_26';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260902_01';
+import { SoundEngine } from './audio.js?v=20260902_01';
 
 function getOrCreateGuestUsername() {
   let stored = localStorage.getItem('skillgen_username');
@@ -120,7 +120,7 @@ function formatTime(seconds) {
 
 function recordAction(action, customMeta = {}) {
   state.actions.push(action);
-  if (state.actions.length > 100) state.actions.shift();
+  if (state.actions.length > 80) state.actions.shift();
   state.actionCounts[action] = (state.actionCounts[action] || 0) + 1;
 
   if (action === 'damage_taken') {
@@ -150,11 +150,12 @@ function recordAction(action, customMeta = {}) {
 
   state.actionBuffer = state.actionBuffer.filter(item => (now - item.time) <= dynamicWindow);
 
-  generator.record(action, context);
+  // Record main action (skip immediate regenerate for batching)
+  generator.record(action, context, true);
 
-  // Train valid sequences up to active buffer length
+  // Train valid sequences up to active buffer length (cap at 5 to avoid combinatorial explosion)
   const bufLen = state.actionBuffer.length;
-  for (let len = 2; len <= Math.min(bufLen, 8); len++) {
+  for (let len = 2; len <= Math.min(bufLen, 5); len++) {
     const subActions = state.actionBuffer.slice(bufLen - len).map(i => i.action);
     const uniqueInSeq = new Set(subActions);
     if (uniqueInSeq.size < 2) continue; // Disallow mono-action chains like move->move->move
@@ -164,13 +165,13 @@ function recordAction(action, customMeta = {}) {
 
     const subSeq = subActions.join('→');
     state.sequenceCounts[subSeq] = (state.sequenceCounts[subSeq] || 0) + 1;
-    generator.record(subSeq, context);
+    generator.record(subSeq, context, true);
   }
 
+  // Single batched regenerate call per action
+  generator.regenerate(context);
   state.lastAction = action;
-  state.generatedSkills = generator.snapshot();
-  updateGenerativeHud();
-  renderDeckDashboard();
+  state.deckDirty = true; // Mark UI dirty for throttled render
 }
 
 function generatedModifier(stat) { return generator.modifier(stat) / 100; }
@@ -640,6 +641,7 @@ function updateCombat(dt) {
   state.fireCooldown = Math.max(0, state.fireCooldown - dt);
   state.dashCooldown = Math.max(0, state.dashCooldown - dt);
   state.dashTime = Math.max(0, state.dashTime - dt);
+  state.meleeHitTimer = Math.max(0, (state.meleeHitTimer || 0) - dt);
   player.invuln = Math.max(0, player.invuln - dt);
   player.speedBoost = Math.max(0, player.speedBoost - dt);
   state.flawlessTimer = (state.flawlessTimer || 0) + dt;
@@ -886,10 +888,16 @@ function updateCombat(dt) {
       enemy.x = player.x + (pdx / pdist) * minPlayerDist;
       enemy.y = player.y + (pdy / pdist) * minPlayerDist;
 
-      if (!isInvulnerable) {
+      if (!isInvulnerable && (state.meleeHitTimer || 0) <= 0) {
+        state.meleeHitTimer = 0.25; // 250ms grace period between melee hits
         recordAction('damage_taken');
-        player.hp -= mitigatedDamage(enemy.damage * dt, effectiveArmor);
-        state.texts.push({ x: player.x, y: player.y - 20, text: `-${Math.ceil(enemy.damage * dt)}`, color: '#f06d62', life: 0.4, vy: -10 });
+        const contactDamage = Math.max(3, enemy.damage * 0.35);
+        player.hp -= mitigatedDamage(contactDamage, effectiveArmor);
+        state.shake = 4;
+        audio.playHurt();
+        if (state.texts.length < 25) {
+          state.texts.push({ x: player.x, y: player.y - 20, text: `-${Math.ceil(contactDamage)}`, color: '#f06d62', life: 0.4, vy: -10 });
+        }
         if (player.hp <= 0) state.deathCause = enemy.type === 'boss' ? 'warden_boss' : 'contact_melee';
       }
     }
@@ -1478,6 +1486,17 @@ function update(dt) {
   for (const text of state.texts) { text.y += text.vy * dt; text.life -= dt; }
   state.texts = state.texts.filter(text => text.life > 0);
   for (const enemy of state.enemies) enemy.hitFlash = Math.max(0, enemy.hitFlash - dt);
+
+  // Throttled UI & Deck Dashboard rendering at 5Hz to prevent frame drops and browser freezing
+  state.uiTimer = (state.uiTimer || 0) + dt;
+  if (state.uiTimer >= 0.20 && state.deckDirty) {
+    state.uiTimer = 0;
+    state.deckDirty = false;
+    state.generatedSkills = generator.snapshot();
+    updateGenerativeHud();
+    renderDeckDashboard();
+  }
+
   updateHud();
   draw();
   requestAnimationFrame(loop);
