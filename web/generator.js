@@ -522,7 +522,6 @@ export class GenerativeSkillEngine {
     const parts = pattern.split('→');
     const comboLength = parts.length;
     const tier = comboLength >= 3 ? 'legendary' : (comboLength === 2 ? 'rare' : 'uncommon');
-    const styleClass = this.calculateStyleClass(pattern, tier);
 
     const baseThreshold = comboLength >= 4 ? 4 : (comboLength === 3 ? 6 : (comboLength === 2 ? 12 : 20));
 

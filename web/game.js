@@ -1,5 +1,5 @@
-import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260902_01';
-import { SoundEngine } from './audio.js?v=20260902_01';
+import { GenerativeSkillEngine, calculateDotaCrit } from './generator.js?v=20260902_02';
+import { SoundEngine } from './audio.js?v=20260902_02';
 
 function getOrCreateGuestUsername() {
   let stored = localStorage.getItem('skillgen_username');
@@ -1499,14 +1499,19 @@ function update(dt) {
 
   updateHud();
   draw();
-  requestAnimationFrame(loop);
 }
 
 let previous = performance.now();
 function loop(now) {
-  const dt = Math.min(0.033, (now - previous) / 1000);
-  previous = now;
-  update(dt);
+  // Guarantee next animation frame is ALWAYS scheduled, even if an unexpected error occurs in a single frame
+  requestAnimationFrame(loop);
+  try {
+    const dt = Math.min(0.033, (now - previous) / 1000);
+    previous = now;
+    update(dt);
+  } catch (err) {
+    console.error("Game loop error handled:", err);
+  }
 }
 
 function handleUserAudioUnlock() {
