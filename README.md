@@ -70,13 +70,13 @@ Manual controls are WASD to move, Space to dash, left mouse for Light Strike, he
 
 The repository also includes a standalone HTML5 Canvas action-roguelite in `web/`. It has an infinite scrolling world with the operator fixed at the screen center, endless scaling waves, swarmers/rangers/tanks with distinct colors and combat actions, a Warden bullet-hell boss every five minutes, dash i-frames, relic choices, status effects, combat text, screen feedback, and live run telemetry. The math helpers in `web/game.js` are pure functions and use the documented DPS and armor formulas.
 
-Start it from the repository root:
+Start the full game server (with SQLite leaderboards, authentication, and telemetry APIs) from the repository root:
 
 ```powershell
-python -m http.server 4173 --directory web
+python server.py 4173
 ```
 
-Then open `http://127.0.0.1:4173`. Use `WASD` or arrow keys to move and `Space` to dash. Combat is now automatic: the operator locks onto the nearest living enemy within range only when the line of sight is clear of arena obstacles, then aims and fires without mouse input. Press `P`, `Esc`, or the pause button to freeze the run and open the Telemetry Inspector. It shows the live build, the effective DPS calculation, recent action sequence, and the skill graph generated from your movement, dashes, shots, critical hits, and kills.
+Then open `http://127.0.0.1:4173`. Use `WASD` or arrow keys to move and `Space` to dash. Combat is 100% manual and skill-driven: click LMB for a fast precision shot, or hold LMB to charge a devastating kinetic blast (holding $\ge 1.0$s engages exponential overcharge damage with tactical deceleration). Dashing into enemy projectiles has a 50% chance to parry and deflect them back with bonus critical damage. Below the game arena, the Synthesis Deck Lab provides an 18-slot irrevocable build deck with dual real-time filters (by buff and debuff) and text search. Skills are identified by clean cyber trait-hashes (e.g., `#[MOV] SPD:RNG·L2`, `#[PAR] DMG:ARM·L1`), and experience/levels scale without upper bound exclusively for locked-in skills.
 
 The Generative Core is explainable rather than a cosmetic score. `web/generator.js` mines every observed event and sequence, then synthesizes a descriptor with a generated name, stable unique seed suffix, source, observation count, threshold, unlock rule, growth rule, selected safe effect, and formula. Names and effect selection are deterministic for a seed, but different action patterns can produce different results. For example, the same `fire` event may produce an attack-speed skill in one seed and a healing skill in another. Mob actions are telemetry too: red swarmers roll the 1% `Crimson Mend` self-heal, rangers emit `Amber Volley`, tanks emit `Violet Pressure`, and the Warden emits `Warden Barrage`. These events can become generated skills only after enough observed data, never from an arbitrary one-off bonus.
 
